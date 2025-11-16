@@ -1,0 +1,3 @@
+symbol: "BTCUSDT"
+database:
+  url: "postgresql+psycopg2://root:jcp12196@localhost:5432/binance_db"
