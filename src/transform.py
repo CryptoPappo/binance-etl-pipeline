@@ -6,7 +6,7 @@ def transform(df: pd.DataFrame):
     df["m"] = df["m"].map({True: "Sell", False: "Buy"}).astype("category")
     df["T"] = pd.to_datetime(df["T"], unit="ms")
     df["quote_qty"] = df["q"] * df["p"]
-    df = df.loc[:, ["a", "p", "q", "T", "m"]]
+    df = df.loc[:, ["a", "p", "q", "quote_qty", "T", "m"]]
     df = df.rename(columns={"a": "trade_id", "p": "price", "q": "quantity", "T": "time", "m": "order_type"})
 
     return df
