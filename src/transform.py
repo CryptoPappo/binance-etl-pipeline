@@ -8,6 +8,7 @@ def transform(df: pd.DataFrame) -> pd.DataFrame:
     df["quote_qty"] = df["q"] * df["p"]
     df = df.loc[:, ["a", "p", "q", "quote_qty", "T", "m"]]
     df = df.rename(columns={"a": "trade_id", "p": "price", "q": "quantity", "T": "time", "m": "order_type"})
+    df = df.drop_duplicates(subset=["trade_id"])
 
     return df
     

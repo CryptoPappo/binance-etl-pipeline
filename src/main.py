@@ -14,7 +14,7 @@ def main():
 
     symbol = config["symbol"]
     db_url = config["database"]["url"]
-    start_time = int(time.time() * 1000) - 1000
+    start_time = int(time.time() * 1000 - 60 * 60 * 1000)
     
     try:
         logger.info("Extracting data...")
