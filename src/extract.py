@@ -1,13 +1,17 @@
-from typing import Tuple
+from typing import Tuple, Union
 import requests
 import time
 import pandas as pd
 from utils import get_logger
 logger = get_logger("extract")
 
-def extract(symbol: str, start_time: int) -> pd.DataFrame:
-    logger.info(f"Extracting trades for {symbol} from timestamp {start_time}")
-    url = f"https://api.binance.com/api/v3/aggTrades?symbol={symbol}&startTime={start_time}&limit=1000" 
+def extract(symbol: str, start_time: int, tradeId: Union[int, None]) -> pd.DataFrame:
+    logger.info(f"Extracting trades for {symbol} from timestamp {start_time}")    
+    if tradeId is None:
+        url = f"https://api.binance.com/api/v3/aggTrades?symbol={symbol}&startTime={start_time}&limit=1000" 
+    else:
+        url = f"https://api.binance.com/api/v3/aggTrades?symbol={symbol}&fromId={tradeId}&limit=1000" 
+
     df, start_time, tradeId = process_call(url, pd.DataFrame())
     end_time = time.time() * 1000
 

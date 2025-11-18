@@ -3,7 +3,7 @@ import time
 from extract import extract
 from transform import transform
 from load import load
-from utils import get_logger
+from utils import get_logger, get_latest_tradeId
 logger = get_logger("main")
 
 def main():
@@ -15,10 +15,13 @@ def main():
     symbol = config["symbol"]
     db_url = config["database"]["url"]
     start_time = int(time.time() * 1000 - 60 * 60 * 1000)
-    
+
+    logger.info("Retrieving latest tradeId stored...")
+    tradeId = get_latest_tradeId(db_url)
+
     try:
         logger.info("Extracting data...")
-        raw = extract(symbol, start_time)
+        raw = extract(symbol, start_time, tradeId)
         logger.info("Transforming data...")
         transformed = transform(raw)
         logger.info("Loading data...")
