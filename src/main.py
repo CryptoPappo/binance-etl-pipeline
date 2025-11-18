@@ -18,6 +18,8 @@ def main():
 
     logger.info("Retrieving latest tradeId stored...")
     tradeId = get_latest_tradeId(db_url)
+    if tradeId is not None:
+        tradeId +=1 
 
     try:
         logger.info("Extracting data...")
