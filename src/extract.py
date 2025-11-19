@@ -26,18 +26,15 @@ def extract(symbol: str, start_time: int, trade_id: Union[int, None]) -> pd.Data
     """
     logger.info(f"Extracting trades for {symbol} from timestamp {start_time}")    
     if trade_id is None:
-        url = f"https://api.binance.com/api/v3/aggTrades?symbol={symbol}&startTime=\
-                {start_time}&limit=1000" 
+        url = f"https://api.binance.com/api/v3/aggTrades?symbol={symbol}&startTime={start_time}&limit=1000" 
     else:
-        url = f"https://api.binance.com/api/v3/aggTrades?symbol={symbol}&fromId=\
-                {trade_id}&limit=1000" 
+        url = f"https://api.binance.com/api/v3/aggTrades?symbol={symbol}&fromId={trade_id}&limit=1000" 
     df, start_time, trade_id = _process_call(url, pd.DataFrame())
     end_time = time.time() * 1000
 
     while start_time < end_time:
         logger.info(f"Extracting trades for {symbol} from timestamp {start_time}")
-        url = f"https://api.binance.com/api/v3/aggTrades?symbol={symbol}&fromId=\
-                {trade_id}&limit=1000" 
+        url = f"https://api.binance.com/api/v3/aggTrades?symbol={symbol}&fromId={trade_id}&limit=1000" 
         df, start_time, trade_id = _process_call(url, df)
 
     return df
