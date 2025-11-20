@@ -3,7 +3,7 @@ import time
 from extract import extract
 from transform import transform
 from load import load
-from utils import get_logger, get_latest_tradeId
+from utils import get_logger, get_latest_trade_id
 logger = get_logger("main")
 
 def main():
@@ -30,16 +30,17 @@ def main():
         config = yaml.safe_load(f)
     symbol = config["symbol"]
     db_url = config["database"]["url"]
-    start_time = int(time.time()*1000 - 60*60*1000)
+    hours_back = config["hours_back"]
+    start_time = int(time.time()*1000 - hours_back*60*60*1000)
 
     logger.info("Retrieving latest tradeId stored...")
-    tradeId = get_latest_tradeId(db_url)
-    if tradeId is not None:
-        tradeId +=1 
+    trade_id = get_latest_trade_id(db_url)
+    if trade_id is not None:
+        trade_id +=1 
 
     try:
         logger.info("Extracting data...")
-        raw = extract(symbol, start_time, tradeId)
+        raw = extract(symbol, start_time, trade_id=trade_id)
         logger.info("Transforming data...")
         transformed = transform(raw)
         logger.info("Loading data...")

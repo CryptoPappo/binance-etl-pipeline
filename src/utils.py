@@ -58,7 +58,7 @@ def get_logger(name: str) -> Logger:
 
     return logger
 
-def get_latest_tradeId(db_url: str) -> Union[int, None]:
+def get_latest_trade_id(db_url: str) -> Union[int, None]:
     """Query database for latest trade id stored."""
     engine = create_engine(db_url)
     query = text("SELECT MAX(trade_id) FROM trades;")

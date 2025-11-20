@@ -5,7 +5,8 @@ import pandas as pd
 from utils import get_logger
 logger = get_logger("extract")
 
-def extract(symbol: str, start_time: int, trade_id: Union[int, None]) -> pd.DataFrame:
+def extract(symbol: str, start_time: int, trade_id: Union[int, None] = None, 
+            end_time: Union[int, None] = None) -> pd.DataFrame:
     """
     
     Extract aggregated trades from Binance between a starting timestamp or trade id and
@@ -21,6 +22,7 @@ def extract(symbol: str, start_time: int, trade_id: Union[int, None]) -> pd.Data
     Returns:
         Pandas dataframe of aggregated trades as returned by the Binance API.
 
+
     Notes:
         When trade_id is not None it is used as a starting point instead of start_time.
     """
@@ -30,7 +32,8 @@ def extract(symbol: str, start_time: int, trade_id: Union[int, None]) -> pd.Data
     else:
         url = f"https://api.binance.com/api/v3/aggTrades?symbol={symbol}&fromId={trade_id}&limit=1000" 
     df, start_time, trade_id = _process_call(url, pd.DataFrame())
-    end_time = time.time() * 1000
+    if end_time is None:
+        end_time = time.time() * 1000
 
     while start_time < end_time:
         logger.info(f"Extracting trades for {symbol} from timestamp {start_time}")
