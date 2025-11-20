@@ -48,11 +48,12 @@ binance-etl-pipeline/
 ```
 
 ## Configuration
-All settings (symbol, API URL, DB connection, etc.) are stored in `config/config.yaml`.
+All settings (symbol, DB connection and time window) are stored in `config/config.yaml`.
 
 Example:
 ```
 symbol: "BTCUSDT"
+hours_back: 1
 database:
   url: "driver://username:password@host:port/database_name"
 ```
@@ -78,6 +79,7 @@ Duplicate rows (based on `trade_id`) are naturally handled by PostgreSQL’s pri
 python3 src/main.py
 ```
 **Run hourly with cron:**
+
 Edit crontab:
 ```
 crontab -e
@@ -86,5 +88,32 @@ Add:
 ```
 0 * * * * /usr/bin/python3 /path/to/repo/src/main.py >> /path/to/repo/logs/etl.log 2>&1
 ```
-This runs the ETL every hour on the hour. 
+This runs the ETL every hour on the hour, but you can configure it according to the time window chosen. 
 
+##Pipeline Workflow
+1. **Extract**
+Fetch aggregated trades for the time window specified in `config/config.yaml`.
+2. **Transform**
+Convert raw JSON into a normalized DataFrame:
+  * Convert numeric fields
+  * Map `isBuyerMaker` to Buy/Sell categories
+  * Convert date fields
+  * Rename columns
+  * Drop irrelevant fields and duplicates
+3. **Load**
+Insert DataFrame rows into PostgreSQL:
+  * Bulk insert using SQLAlchemy
+  * Handle duplicate `trade_id` safely
+  * Commit transaction
+4. **Logging**
+Logs include:
+  * Execution start/end
+  * Number of trades processed
+  * Errors from API or database
+  * Cron-triggered execution reports
+
+## Future Imporvements
+* Add support for multiple trading pairs
+* Store raw and transformed data separately
+* Move scheduling to Airflow for more complex workflow
+* Add Docker support
