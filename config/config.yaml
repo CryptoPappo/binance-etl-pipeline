@@ -1,4 +1,4 @@
 symbol: "BTCUSDT"
 hours_back: 1
 database:
-  url: "postgresql+psycopg2://root:jcp12196@localhost:5432/binance_db"
+  url: "postgresql+psycopg2://user:password@localhost:5432/mydatabase"
