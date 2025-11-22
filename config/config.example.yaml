@@ -1,0 +1,4 @@
+symbol: "BTCUSDT"
+hours_back: 1
+database:
+  url: "postgresql+psycopg2://user:password@localhost:5432/mydatabase" 
