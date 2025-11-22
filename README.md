@@ -43,6 +43,10 @@ binance-etl-pipeline/
 │   └── config.yaml
 ├── logs/
 │   └── etl.log
+├── tests/
+|   ├── test_extract.py
+|   ├── test_transform.py
+|   └── test_load.py
 ├── requirements.txt
 └── README.md
 ```
@@ -169,6 +173,37 @@ Logs include:
   * Number of trades processed
   * Errors from API or database
   * Cron-triggered execution reports
+
+## Tests
+
+This project includes unit tests for the Extract, Transform and Load
+components of the pipeline.  
+Tests are implemented with **pytest** and use the **responses** library
+to mock external API calls and avoid hitting the real Binance API.
+
+### Running the tests
+
+Install the development dependencies:
+```bash
+pip install -r requirements-dev.txt
+```
+Install sqlite:
+```bash
+sudo apt install sqlite3
+```
+
+Run the full test suite:
+```bash
+pytest -v
+```
+### What is tested?
+
+* extract(): API call behavior and pagination are tested using mocked HTTP responses.
+* transform(): Data cleaning and field normalization are tested using sample raw payloads.
+* load(): Database loading logic is tested against an in-memory SQLite engine.
+
+These tests ensure the ETL pipeline behaves deterministically and does not 
+depend on network availability during development.
 
 ## Future Improvements
 * Add support for multiple trading pairs
