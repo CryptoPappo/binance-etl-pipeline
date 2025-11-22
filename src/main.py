@@ -1,5 +1,6 @@
 import yaml
 import time
+from sqlalchemy import create_engine
 from extract import extract
 from transform import transform
 from load import load
@@ -32,6 +33,7 @@ def main():
     db_url = config["database"]["url"]
     hours_back = config["hours_back"]
     start_time = int(time.time()*1000 - hours_back*60*60*1000)
+    engine = create_engine(db_url)
 
     logger.info("Retrieving latest tradeId stored...")
     trade_id = get_latest_trade_id(db_url)
@@ -44,7 +46,7 @@ def main():
         logger.info("Transforming data...")
         transformed = transform(raw)
         logger.info("Loading data...")
-        load(transformed, db_url)
+        load(transformed, engine)
         logger.info("ETL job finished successfully")
     except Exception as e:
         logger.exception("ETL failed due to an error")
