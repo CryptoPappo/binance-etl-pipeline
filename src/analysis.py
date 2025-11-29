@@ -1,9 +1,9 @@
 import yaml
+import pathlib
+from typing import Tuple, Union
 import pandas as pd
 from sqlalchemy import create_engine
 from sqlalchemy.engine.base import Engine
-import matplotlib.pyplot as plt
-import matplotlib.dates as mpdates
 import mplfinance as mpf
 with open("/root/binance-etl-pipeline/config/config.yaml") as f:
     config = yaml.safe_load(f)
@@ -15,7 +15,8 @@ def load_db(query: str, engine: Engine) -> pd.DataFrame:
     return df
 
 def plot_candlesticks(start_time: str, end_time: str, interval: str = 'day',
-                      show: bool = True, savefig: bool = False, path: str = ""):
+                      mav: Union[int, Tuple[int], None] = None,  show: bool = True, 
+                      savefig: bool = False, path: str = ""):
     engine = create_engine(db_url)
     open_query = f"""
     SELECT date, price AS open
@@ -69,11 +70,11 @@ def plot_candlesticks(start_time: str, end_time: str, interval: str = 'day',
     df = df[["open", "high", "low", "close", "volume"]]
     
     if savefig:
+        path = pathlib.Path(path) / f"price_{start_time.replace(' ', '_').replace(':', '-')}_{end_time.replace(' ', '_').replace(':', '-')}_{interval}.pdf"
         mpf.plot(df, type="candle", style="yahoo", figsize=(14, 7), volume=True, savefig=path,
-                 title=f"Prices between {start_time} and {end_time} at {interval} interval")
+                 mav=mav, title=f"Prices between {start_time} and {end_time} at {interval} interval")
 
     if show:    
         mpf.plot(df, type="candle", style="yahoo", figsize=(14, 7), volume=True,
-                 title=f"Prices between {start_time} and {end_time} at {interval} interval")
+                 mav=mav, title=f"Prices between {start_time} and {end_time} at {interval} interval")
 
-    return df
