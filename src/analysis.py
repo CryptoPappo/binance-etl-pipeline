@@ -5,6 +5,7 @@ import pandas as pd
 from sqlalchemy import create_engine
 from sqlalchemy.engine.base import Engine
 import mplfinance as mpf
+import matplotlib.pyplot as plt
 with open("/root/binance-etl-pipeline/config/config.yaml") as f:
     config = yaml.safe_load(f)
 db_url = config["database"]["url"]
@@ -78,3 +79,52 @@ def plot_candlesticks(start_time: str, end_time: str, interval: str = 'day',
         mpf.plot(df, type="candle", style="yahoo", figsize=(14, 7), volume=True,
                  mav=mav, title=f"Prices between {start_time} and {end_time} at {interval} interval")
 
+def plot_buy_sell_ratio(start_time: str, end_time: str, interval: str = 'day',
+                        show: bool = True, savefig: bool = False, path: str = ""):
+    engine = create_engine(db_url)
+    buy_vol_query = f"""
+    SELECT date, SUM(buy_qty) AS buy_volume
+    FROM (
+        SELECT date_trunc('{interval}', time) AS date,
+            CASE 
+                WHEN order_type = 'Buy' THEN quantity
+                ELSE 0
+            END AS buy_qty
+        FROM trades
+        WHERE time BETWEEN '{start_time}' AND '{end_time}'
+    ) b
+    GROUP BY date;
+    """
+    buy_df = pd.read_sql(buy_vol_query, engine)
+
+    sell_vol_query = f"""
+    SELECT date, SUM(sell_qty) AS sell_volume
+    FROM (
+        SELECT date_trunc('{interval}', time) AS date,
+            CASE 
+                WHEN order_type = 'Sell' THEN quantity
+                ELSE 0
+            END AS sell_qty
+        FROM trades
+        WHERE time BETWEEN '{start_time}' AND '{end_time}'
+    ) s
+    GROUP BY date;
+    """
+    sell_df = pd.read_sql(sell_vol_query, engine)
+
+    df = pd.merge(buy_df, sell_df, on="date", how="inner")
+    df["buy_sell_ratio"] = df["buy_volume"] / df["sell_volume"]
+    
+    plt.figure(figsize=(10, 6))
+    plt.plot(df["date"], df["buy_sell_ratio"], color="blue", linewidth=1.5)
+    plt.title(f"Buy/Sell ratio between {start_time} \n and {end_time} at {interval} interval")
+    plt.xlabel("Date")
+    plt.ylabel("Buy/Sell ratio")
+    plt.tight_layout()
+
+    if savefig:
+        path += f"/buy_sell_ratio_{start_time.replace(' ', '_').replace(':', '-')}_{end_time.replace(' ', '_').replace(':', '-')}_{interval}.pdf"
+        plt.savefig(path, format="pdf")
+
+    if show:
+        plt.show()
