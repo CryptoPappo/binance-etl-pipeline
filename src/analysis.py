@@ -15,7 +15,7 @@ def load_db(query: str, engine: Engine) -> pd.DataFrame:
 
     return df
 
-def plot_candlesticks(start_time: str, end_time: str, interval: str = 'day',
+def plot_candlesticks(start_time: str, end_time: str, interval: str = "day",
                       mav: Union[int, Tuple[int], None] = None,  show: bool = True, 
                       savefig: bool = False, path: str = ""):
     engine = create_engine(db_url)
@@ -79,7 +79,7 @@ def plot_candlesticks(start_time: str, end_time: str, interval: str = 'day',
         mpf.plot(df, type="candle", style="yahoo", figsize=(14, 7), volume=True,
                  mav=mav, title=f"Prices between {start_time} and {end_time} at {interval} interval")
 
-def plot_buy_sell_ratio(start_time: str, end_time: str, interval: str = 'day',
+def plot_buy_sell_ratio(start_time: str, end_time: str, interval: str = "day",
                         show: bool = True, savefig: bool = False, path: str = ""):
     engine = create_engine(db_url)
     buy_vol_query = f"""
@@ -128,3 +128,29 @@ def plot_buy_sell_ratio(start_time: str, end_time: str, interval: str = 'day',
 
     if show:
         plt.show()
+
+def plot_trades_boxplot(start_time: str, end_time: str, interval: str = "day", 
+                        show: bool = True, savefig: bool = False, path : str = ""):
+    engine = create_engine(db_url)
+    query = f"""
+    SELECT date_trunc('{interval}', time) AS date, quantity
+    FROM trades
+    WHERE time BETWEEN '{start_time}' AND '{end_time}';
+    """
+    df = pd.read_sql(query, engine)
+    df = df.sort_values("date")
+
+    fig, ax = plt.subplots(figsize=(10, 6))
+    ax.set_title(f"Boxplot of trades between {start_time} \n and {end_time} at {interval} interval")
+    ax.set_xlabel("Date")
+    ax.set_ylabel("Trades size")
+    boxplot = df.boxplot(column="quantity", by="date", ax=ax, rot=45)
+    plt.tight_layout()
+
+    if savefig:
+        path += f"/boxplot_{start_time.replace(' ', '_').replace(':', '-')}_{end_time.replace(' ', '_').replace(':', '-')}_{interval}.pdf"
+        plt.savefig(path, format="pdf")
+    
+    if show:
+        plt.show()
+
