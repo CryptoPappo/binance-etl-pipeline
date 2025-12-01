@@ -198,3 +198,33 @@ def plot_histogram(start_time: str, end_time: str, bins: int = 100,
     
     if show:
         plt.show()
+
+def plot_buy_sell_histogram(start_time: str, end_time: str, bins: int = 100,
+                            lower_quant: float = 0.0, upper_quant: float = 1.0,
+                            show: bool = True, savefig: bool = False, path : str = ""):
+    engine = create_engine(db_url)
+    query = f"""
+    SELECT time AS date,
+        CASE
+            WHEN order_type = 'Buy' THEN quantity
+            ELSE -quantity
+        END AS quantity
+    FROM trades
+    WHERE time BETWEEN '{start_time}' AND '{end_time}';
+    """
+    df = pd.read_sql(query, engine)
+    buy_df = df[df["quantity"] >= 0.0]
+    sell_df = df[df["quantity"] <= 0.0]
+
+    fig, ax = plt.subplots(figsize=(10, 6))
+    ax.set_title(f"Histogram of trades between {start_time} \n and {end_time}")
+    _ = ax.hist(buy_df["quantity"], color="green", bins=bins, density=True, range=(0, buy_df["quantity"].quantile(upper_quant)))
+    _ = ax.hist(sell_df["quantity"], color="red", bins=bins, density=True, range=(sell_df["quantity"].quantile(lower_quant), 0))
+    plt.tight_layout()
+
+    if savefig:
+        path += f"/buy_sell_histogram_{start_time.replace(' ', '_').replace(':', '-')}_{end_time.replace(' ', '_').replace(':', '-')}.pdf"
+        plt.savefig(path, format="pdf")
+    
+    if show:
+        plt.show()
