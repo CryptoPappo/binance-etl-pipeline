@@ -228,3 +228,30 @@ def plot_buy_sell_histogram(start_time: str, end_time: str, bins: int = 100,
     
     if show:
         plt.show()
+
+def plot_vol_delta(start_time: str, end_time: str, show: bool = True,
+                   savefig: bool = False, path : str = ""):
+    engine = create_engine(db_url)
+    query = f"""
+    SELECT time AS date,
+        CASE
+            WHEN order_type = 'Buy' THEN quantity
+            ELSE -quantity
+        END AS quantity
+    FROM trades
+    WHERE time BETWEEN '{start_time}' AND '{end_time}';
+    """
+    df = pd.read_sql(query, engine)
+    df["cvd"] = df["quantity"].cumsum()
+
+    fig, ax = plt.subplots(figsize=(10, 6))
+    ax.set_title(f"Cumulative volume delta between {start_time} \n and {end_time}")
+    _ = ax.plot(df["date"], df["cvd"], color="black", linewidth=1.5)
+    plt.tight_layout()
+
+    if savefig:
+        path += f"/cvd_{start_time.replace(' ', '_').replace(':', '-')}_{end_time.replace(' ', '_').replace(':', '-')}.pdf"
+        plt.savefig(path, format="pdf")
+    
+    if show:
+        plt.show()
