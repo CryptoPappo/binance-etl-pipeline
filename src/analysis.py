@@ -6,6 +6,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.engine.base import Engine
 import mplfinance as mpf
 import matplotlib.pyplot as plt
+import numpy as np
 with open("/root/binance-etl-pipeline/config/config.yaml") as f:
     config = yaml.safe_load(f)
 db_url = config["database"]["url"]
@@ -129,8 +130,9 @@ def plot_buy_sell_ratio(start_time: str, end_time: str, interval: str = "day",
     if show:
         plt.show()
 
-def plot_trades_boxplot(start_time: str, end_time: str, interval: str = "day", 
-                        show: bool = True, savefig: bool = False, path : str = ""):
+def plot_boxplot(start_time: str, end_time: str, interval: str = "day", 
+                 upper_quant: float = 1.0, log: bool = False, show: bool = True, 
+                 savefig: bool = False, path : str = ""):
     engine = create_engine(db_url)
     query = f"""
     SELECT date_trunc('{interval}', time) AS date, quantity
@@ -139,18 +141,60 @@ def plot_trades_boxplot(start_time: str, end_time: str, interval: str = "day",
     """
     df = pd.read_sql(query, engine)
     df = df.sort_values("date")
+    
+    if interval == "day":
+        frequency = "D"
+    elif interval == "hour":
+        frequency = "h"
+    elif interval == "minute":
+        frequency = "min"
+    elif interval == "second":
+        frequency = "s"
+    else:
+        raise Exception(f"Invalid interval. (interval={interval})")
+    df["date"] = df["date"].dt.floor(frequency)
+    max_value = df["quantity"].quantile(upper_quant)
+    df["quantity"] = df["quantity"].clip(upper=max_value)
+    if log:
+        df["quantity"] = np.log(df["quantity"])
 
-    fig, ax = plt.subplots(figsize=(10, 6))
+    fig, ax = plt.subplots(figsize=(10, 6)) 
+    boxplot = df.boxplot(by="date", column=["quantity"], ax=ax, rot=45)
+    fig_ = boxplot.get_figure()
+    fig_.suptitle("")
     ax.set_title(f"Boxplot of trades between {start_time} \n and {end_time} at {interval} interval")
     ax.set_xlabel("Date")
     ax.set_ylabel("Trades size")
-    boxplot = df.boxplot(column="quantity", by="date", ax=ax, rot=45)
     plt.tight_layout()
 
     if savefig:
-        path += f"/boxplot_{start_time.replace(' ', '_').replace(':', '-')}_{end_time.replace(' ', '_').replace(':', '-')}_{interval}.pdf"
-        plt.savefig(path, format="pdf")
+        path += f"/boxplot_{start_time.replace(' ', '_').replace(':', '-')}_{end_time.replace(' ', '_').replace(':', '-')}_{interval}.png"
+        plt.savefig(path, format="png")
     
     if show:
         plt.show()
 
+def plot_histogram(start_time: str, end_time: str, bins: int = 100, 
+                   upper_quant: float = 1.0, log: bool = False, show: bool = True, 
+                   savefig: bool = False, path : str = ""):
+    engine = create_engine(db_url)
+    query = f"""
+    SELECT time AS date, quantity
+    FROM trades
+    WHERE time BETWEEN '{start_time}' AND '{end_time}';
+    """
+    df = pd.read_sql(query, engine)
+    if log:
+        df["quantity"] = np.log(df["quantity"])
+
+    fig, ax = plt.subplots(figsize=(10, 6))
+    ax.set_title(f"Histogram of trades between {start_time} \n and {end_time}")
+    _ = ax.hist(df["quantity"], bins=bins, density=True, range=(0, df["quantity"].quantile(upper_quant)))
+    plt.tight_layout()
+
+    if savefig:
+        path += f"/histogram_{start_time.replace(' ', '_').replace(':', '-')}_{end_time.replace(' ', '_').replace(':', '-')}.pdf"
+        plt.savefig(path, format="pdf")
+    
+    if show:
+        plt.show()
