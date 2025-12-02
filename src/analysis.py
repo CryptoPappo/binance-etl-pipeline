@@ -283,3 +283,44 @@ def plot_tick_imbalance(start_time: str, end_time: str, show: bool = True,
     if show:
         plt.show()
 
+def plot_correlation_funcs(start_time: str, end_time: str, corr_distance: int = 100,
+                           log: bool = False, show: bool = True, savefig: bool = False, 
+                           path : str = ""):
+    engine = create_engine(db_url)
+    query = f"""
+    SELECT time AS date, quantity, 
+        CASE 
+            WHEN order_type = 'Buy' THEN 1
+            ELSE -1
+        END signed_qty
+    FROM trades
+    WHERE time BETWEEN '{start_time}' AND '{end_time}';
+    """
+    df = pd.read_sql(query, engine)
+    corr_size = np.ones(corr_distance)
+    corr_sign = np.ones(corr_distance)
+    x = np.arange(0, corr_distance)
+    
+    for i in range(1, corr_distance):
+        corr_size[i] = df["quantity"].corr(df["quantity"].shift(i))
+        corr_sign[i] = df["signed_qty"].corr(df["signed_qty"].shift(i))
+
+    fig, ax = plt.subplots(2, 1, figsize=(10, 6), sharex=True)
+    fig.suptitle(f"Correlation functions between {start_time} \n and {end_time}")
+    ax[0].set_title("Trade size correlation function")
+    ax[1].set_title("Trade sign correlation function")
+
+    if log:
+        _ = ax[0].loglog(x[1:], corr_size[1:], "o", color="blue")
+        _ = ax[1].loglog(x[1:], corr_sign[1:], "o", color="orange")
+    else:
+        _ = ax[0].plot(x, corr_size, "o", color="blue")
+        _ = ax[1].plot(x, corr_sign, "o", color="orange")
+
+    if savefig:
+        path += f"/corr_funcs_{start_time.replace(' ', '_').replace(':', '-')}_{end_time.replace(' ', '_').replace(':', '-')}.pdf"
+        plt.savefig(path, format="pdf")
+    
+    if show:
+        plt.show()
+    
