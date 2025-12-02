@@ -255,3 +255,31 @@ def plot_vol_delta(start_time: str, end_time: str, show: bool = True,
     
     if show:
         plt.show()
+
+def plot_tick_imbalance(start_time: str, end_time: str, show: bool = True,
+                        savefig: bool = False, path : str = ""):
+    engine = create_engine(db_url)
+    query = f"""
+    SELECT time AS date,
+        CASE
+            WHEN order_type = 'Buy' THEN 1
+            ELSE -1
+        END AS quantity
+    FROM trades
+    WHERE time BETWEEN '{start_time}' AND '{end_time}';
+    """
+    df = pd.read_sql(query, engine)
+    df["tick_imbalance"] = df["quantity"].cumsum()
+
+    fig, ax = plt.subplots(figsize=(10, 6))
+    ax.set_title(f"Tick imbalance between {start_time} \n and {end_time}")
+    _ = ax.plot(df["date"], df["tick_imbalance"], color="black", linewidth=1.5)
+    plt.tight_layout()
+
+    if savefig:
+        path += f"/tick_imbalance_{start_time.replace(' ', '_').replace(':', '-')}_{end_time.replace(' ', '_').replace(':', '-')}.pdf"
+        plt.savefig(path, format="pdf")
+    
+    if show:
+        plt.show()
+
