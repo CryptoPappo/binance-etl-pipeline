@@ -7,6 +7,7 @@ from sqlalchemy.engine.base import Engine
 import mplfinance as mpf
 import matplotlib.pyplot as plt
 import numpy as np
+from scipy.optimize import curve_fit
 with open("/root/binance-etl-pipeline/config/config.yaml") as f:
     config = yaml.safe_load(f)
 db_url = config["database"]["url"]
@@ -302,8 +303,8 @@ def plot_correlation_funcs(start_time: str, end_time: str, corr_distance: int = 
     x = np.arange(0, corr_distance)
     
     for i in range(1, corr_distance):
-        corr_size[i] = df["quantity"].corr(df["quantity"].shift(i))
-        corr_sign[i] = df["signed_qty"].corr(df["signed_qty"].shift(i))
+        corr_size[i] = df["quantity"].autocorr(lag=i)
+        corr_sign[i] = df["signed_qty"].autocorr(lag=i)
 
     fig, ax = plt.subplots(2, 1, figsize=(10, 6), sharex=True)
     fig.suptitle(f"Correlation functions between {start_time} \n and {end_time}")
@@ -323,4 +324,57 @@ def plot_correlation_funcs(start_time: str, end_time: str, corr_distance: int = 
     
     if show:
         plt.show()
+
+def autocorr_lag(x: pd.Series, max_lag: int = 100) -> np.ndarray:
+    autocorr = np.zeros(max_lag)
+    autocorr[0] = 1.0
+    for lag in range(1, max_lag):
+        if len(x) - 1 > lag:
+            autocorr[lag] = x.autocorr(lag=lag)
+        else:
+            break
+
+    return autocorr
+
+def correlation_func(x, exp, corr_length):
+    return x**(-exp)*np.exp(-x/corr_length)
+
+def fit_func(x, y):
+    popt, pcov = curve_fit(correlation_func, x[1:], y[1:])
+    err = np.sqrt(np.diag(pcov))
     
+    return np.array([popt[1], err[1]])
+
+def plot_correlation_length(start_time: str, end_time: str, corr_distance: int = 100,
+                            interval: str = "day", show: bool = True, savefig: bool = False,
+                            path : str = ""):
+    engine = create_engine(db_url)
+    query = f"""
+    SELECT date_trunc('{interval}', time) AS date, 
+        CASE
+            WHEN order_type = 'Buy' THEN 1
+            ELSE -1
+        END AS signed_qty
+    FROM trades
+    WHERE time BETWEEN '{start_time}' AND '{end_time}';
+    """
+    df = pd.read_sql(query, engine)
+    corr_df = df.groupby("date")["signed_qty"].apply(lambda x: autocorr_lag(x, corr_distance))
+    x = np.arange(0, corr_distance)
+    corr_df = corr_df.apply(lambda y: fit_func(x, y))
+    corr_err = np.array([corr_df.values[i] for i in range(corr_df.size)])
+    time = corr_df.index.to_numpy()
+
+    fig, ax = plt.subplots(figsize=(10, 6))
+    ax.set_title(f"Correlation length between {start_time} \n and {end_time}")
+    ax.set_xlabel("Date")
+    ax.set_ylabel("Correlation length")
+    _ = ax.plot(time, corr_err[:,0], "o", color="black", linestyle=None)
+    _ = ax.errorbar(time, corr_err[:,0], yerr=corr_err[:,1], color="black", linestyle=None)
+
+    if savefig:
+        path += f"/corr_length_{start_time.replace(' ', '_').replace(':', '-')}_{end_time.replace(' ', '_').replace(':', '-')}_{interval}.pdf"
+        plt.savefig(path, format="pdf")
+
+    if show:
+        plt.show()
