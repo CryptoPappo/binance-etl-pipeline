@@ -32,6 +32,7 @@ The goal of this project is to strengthen practical data engineering skills usin
 ```
 binance-etl-pipeline/
 ├── src/
+|   ├── images/
 │   ├── extract.py
 │   ├── transform.py
 │   ├── load.py
@@ -190,7 +191,9 @@ You can generate plots such as:
 - Tick imbalance
 - Autocorrelation functions
 
-These tools help validate the ETL results and provide insights into market activity.
+These tools help validate the ETL results and provide insights into market activity. 
+
+Some example plots are stored in `src/images`.
 
 ## Tests
 
@@ -228,6 +231,7 @@ depend on network availability during development.
 * Store raw and transformed data separately
 * Move scheduling to Airflow for more complex workflow
 * Add Docker support
+* Generate reports automatically
 
 ## License
 This project is open-source and available under the MIT License.
