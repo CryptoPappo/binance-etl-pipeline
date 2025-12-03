@@ -19,7 +19,7 @@ def load_db(query: str, engine: Engine) -> pd.DataFrame:
 
 def plot_candlesticks(start_time: str, end_time: str, interval: str = "day",
                       mav: Union[int, Tuple[int], None] = None,  show: bool = True, 
-                      savefig: bool = False, path: str = ""):
+                      savefig: bool = False, path: str = "", format: str = "pdf"):
     engine = create_engine(db_url)
     open_query = f"""
     SELECT date, price AS open
@@ -73,7 +73,7 @@ def plot_candlesticks(start_time: str, end_time: str, interval: str = "day",
     df = df[["open", "high", "low", "close", "volume"]]
     
     if savefig:
-        path = pathlib.Path(path) / f"price_{start_time.replace(' ', '_').replace(':', '-')}_{end_time.replace(' ', '_').replace(':', '-')}_{interval}.pdf"
+        path = pathlib.Path(path) / f"price_{start_time.replace(' ', '_').replace(':', '-')}_{end_time.replace(' ', '_').replace(':', '-')}_{interval}.{format}"
         mpf.plot(df, type="candle", style="yahoo", figsize=(14, 7), volume=True, savefig=path,
                  mav=mav, title=f"Prices between {start_time} and {end_time} at {interval} interval")
 
@@ -82,7 +82,8 @@ def plot_candlesticks(start_time: str, end_time: str, interval: str = "day",
                  mav=mav, title=f"Prices between {start_time} and {end_time} at {interval} interval")
 
 def plot_buy_sell_ratio(start_time: str, end_time: str, interval: str = "day",
-                        show: bool = True, savefig: bool = False, path: str = ""):
+                        show: bool = True, savefig: bool = False, path: str = "",
+                        format: str = "pdf"):
     engine = create_engine(db_url)
     buy_vol_query = f"""
     SELECT date, SUM(buy_qty) AS buy_volume
@@ -125,15 +126,15 @@ def plot_buy_sell_ratio(start_time: str, end_time: str, interval: str = "day",
     plt.tight_layout()
 
     if savefig:
-        path += f"/buy_sell_ratio_{start_time.replace(' ', '_').replace(':', '-')}_{end_time.replace(' ', '_').replace(':', '-')}_{interval}.pdf"
-        plt.savefig(path, format="pdf")
+        path += f"/buy_sell_ratio_{start_time.replace(' ', '_').replace(':', '-')}_{end_time.replace(' ', '_').replace(':', '-')}_{interval}.{format}"
+        plt.savefig(path, format=format)
 
     if show:
         plt.show()
 
 def plot_boxplot(start_time: str, end_time: str, interval: str = "day", 
                  upper_quant: float = 1.0, log: bool = False, show: bool = True, 
-                 savefig: bool = False, path : str = ""):
+                 savefig: bool = False, path: str = "", format: str = "png"):
     engine = create_engine(db_url)
     query = f"""
     SELECT date_trunc('{interval}', time) AS date, quantity
@@ -169,15 +170,15 @@ def plot_boxplot(start_time: str, end_time: str, interval: str = "day",
     plt.tight_layout()
 
     if savefig:
-        path += f"/boxplot_{start_time.replace(' ', '_').replace(':', '-')}_{end_time.replace(' ', '_').replace(':', '-')}_{interval}.png"
-        plt.savefig(path, format="png")
+        path += f"/boxplot_{start_time.replace(' ', '_').replace(':', '-')}_{end_time.replace(' ', '_').replace(':', '-')}_{interval}.{format}"
+        plt.savefig(path, format=format)
     
     if show:
         plt.show()
 
 def plot_histogram(start_time: str, end_time: str, bins: int = 100, 
                    upper_quant: float = 1.0, log: bool = False, show: bool = True, 
-                   savefig: bool = False, path : str = ""):
+                   savefig: bool = False, path : str = "", format: str = "pdf"):
     engine = create_engine(db_url)
     query = f"""
     SELECT time AS date, quantity
@@ -194,15 +195,16 @@ def plot_histogram(start_time: str, end_time: str, bins: int = 100,
     plt.tight_layout()
 
     if savefig:
-        path += f"/histogram_{start_time.replace(' ', '_').replace(':', '-')}_{end_time.replace(' ', '_').replace(':', '-')}.pdf"
-        plt.savefig(path, format="pdf")
+        path += f"/histogram_{start_time.replace(' ', '_').replace(':', '-')}_{end_time.replace(' ', '_').replace(':', '-')}.{format}"
+        plt.savefig(path, format=format)
     
     if show:
         plt.show()
 
 def plot_buy_sell_histogram(start_time: str, end_time: str, bins: int = 100,
                             lower_quant: float = 0.0, upper_quant: float = 1.0,
-                            show: bool = True, savefig: bool = False, path : str = ""):
+                            show: bool = True, savefig: bool = False, path : str = "",
+                            format: str = "pdf"):
     engine = create_engine(db_url)
     query = f"""
     SELECT time AS date,
@@ -224,14 +226,15 @@ def plot_buy_sell_histogram(start_time: str, end_time: str, bins: int = 100,
     plt.tight_layout()
 
     if savefig:
-        path += f"/buy_sell_histogram_{start_time.replace(' ', '_').replace(':', '-')}_{end_time.replace(' ', '_').replace(':', '-')}.pdf"
-        plt.savefig(path, format="pdf")
+        path += f"/buy_sell_histogram_{start_time.replace(' ', '_').replace(':', '-')}_{end_time.replace(' ', '_').replace(':', '-')}.{format}"
+        plt.savefig(path, format=format)
     
     if show:
         plt.show()
 
 def plot_vol_delta(start_time: str, end_time: str, show: bool = True,
-                   savefig: bool = False, path : str = ""):
+                   savefig: bool = False, path : str = "",
+                   format: str = "pdf"):
     engine = create_engine(db_url)
     query = f"""
     SELECT time AS date,
@@ -251,14 +254,14 @@ def plot_vol_delta(start_time: str, end_time: str, show: bool = True,
     plt.tight_layout()
 
     if savefig:
-        path += f"/cvd_{start_time.replace(' ', '_').replace(':', '-')}_{end_time.replace(' ', '_').replace(':', '-')}.pdf"
-        plt.savefig(path, format="pdf")
+        path += f"/cvd_{start_time.replace(' ', '_').replace(':', '-')}_{end_time.replace(' ', '_').replace(':', '-')}.{format}"
+        plt.savefig(path, format=format)
     
     if show:
         plt.show()
 
 def plot_tick_imbalance(start_time: str, end_time: str, show: bool = True,
-                        savefig: bool = False, path : str = ""):
+                        savefig: bool = False, path : str = "", format: str = "pdf"):
     engine = create_engine(db_url)
     query = f"""
     SELECT time AS date,
@@ -278,15 +281,15 @@ def plot_tick_imbalance(start_time: str, end_time: str, show: bool = True,
     plt.tight_layout()
 
     if savefig:
-        path += f"/tick_imbalance_{start_time.replace(' ', '_').replace(':', '-')}_{end_time.replace(' ', '_').replace(':', '-')}.pdf"
-        plt.savefig(path, format="pdf")
+        path += f"/tick_imbalance_{start_time.replace(' ', '_').replace(':', '-')}_{end_time.replace(' ', '_').replace(':', '-')}.{format}"
+        plt.savefig(path, format=format)
     
     if show:
         plt.show()
 
 def plot_correlation_funcs(start_time: str, end_time: str, corr_distance: int = 100,
                            log: bool = False, show: bool = True, savefig: bool = False, 
-                           path : str = ""):
+                           path : str = "", format: str = "pdf"):
     engine = create_engine(db_url)
     query = f"""
     SELECT time AS date, quantity, 
@@ -319,8 +322,8 @@ def plot_correlation_funcs(start_time: str, end_time: str, corr_distance: int = 
         _ = ax[1].plot(x, corr_sign, "o", color="orange")
 
     if savefig:
-        path += f"/corr_funcs_{start_time.replace(' ', '_').replace(':', '-')}_{end_time.replace(' ', '_').replace(':', '-')}.pdf"
-        plt.savefig(path, format="pdf")
+        path += f"/corr_funcs_{start_time.replace(' ', '_').replace(':', '-')}_{end_time.replace(' ', '_').replace(':', '-')}.{format}"
+        plt.savefig(path, format=format)
     
     if show:
         plt.show()
@@ -347,7 +350,7 @@ def fit_func(x, y):
 
 def plot_correlation_length(start_time: str, end_time: str, corr_distance: int = 100,
                             interval: str = "day", show: bool = True, savefig: bool = False,
-                            path : str = ""):
+                            path : str = "", format: str = "pdf"):
     engine = create_engine(db_url)
     query = f"""
     SELECT date_trunc('{interval}', time) AS date, 
@@ -373,8 +376,8 @@ def plot_correlation_length(start_time: str, end_time: str, corr_distance: int =
     _ = ax.errorbar(time, corr_err[:,0], yerr=corr_err[:,1], color="black", linestyle=None)
 
     if savefig:
-        path += f"/corr_length_{start_time.replace(' ', '_').replace(':', '-')}_{end_time.replace(' ', '_').replace(':', '-')}_{interval}.pdf"
-        plt.savefig(path, format="pdf")
+        path += f"/corr_length_{start_time.replace(' ', '_').replace(':', '-')}_{end_time.replace(' ', '_').replace(':', '-')}_{interval}.{format}"
+        plt.savefig(path, format=format)
 
     if show:
         plt.show()
