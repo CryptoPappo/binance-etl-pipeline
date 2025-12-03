@@ -36,6 +36,7 @@ binance-etl-pipeline/
 │   ├── transform.py
 │   ├── load.py
 │   ├── utils.py
+│   ├── analysis.py
 │   └── main.py
 ├── sql
 |    └── create_tables.sql
@@ -173,6 +174,23 @@ Logs include:
   * Number of trades processed
   * Errors from API or database
   * Cron-triggered execution reports
+
+## Trade Analysis
+
+The project includes an optional `analysis.py` module with helper 
+functions to explore and visualize the extracted trade data.
+
+You can generate plots such as:
+
+- Price over time
+- Volume over time
+- Buy vs Sell distribution
+- Trade size distributions
+- Volume delta
+- Tick imbalance
+- Autocorrelation functions
+
+These tools help validate the ETL results and provide insights into market activity.
 
 ## Tests
 
