@@ -81,6 +81,73 @@ def plot_candlesticks(start_time: str, end_time: str, interval: str = "day",
         mpf.plot(df, type="candle", style="yahoo", figsize=(14, 7), volume=True,
                  mav=mav, title=f"Prices between {start_time} and {end_time} at {interval} interval")
 
+def plot_price_by_qty(start_time: str, end_time: str, percentile: float = 0.99,
+                      show: bool = True, savefig: bool = False, path: str = "",
+                      format: str = "png", markersize: int = 2):
+    engine = create_engine(db_url)
+    query = f"""
+    SELECT time, price, order_type
+    FROM trades
+    WHERE time BETWEEN '{start_time}' AND '{end_time}' AND
+        quantity >= (
+            SELECT percentile_cont({percentile}) WITHIN GROUP (ORDER BY quantity ASC)
+            FROM trades
+            WHERE time BETWEEN '{start_time}' AND '{end_time}'
+        );
+    """
+    df = pd.read_sql(query, engine)
+    buy_mask = df["order_type"] == "Buy"
+    sell_mask = df["order_type"] == "Sell"
+
+    plt.figure(figsize=(10, 6))
+    plt.plot(df.loc[buy_mask, "time"], df.loc[buy_mask, "price"], "o", color="green",
+             ms=markersize, fillstyle="none")
+    plt.plot(df.loc[sell_mask, "time"], df.loc[sell_mask, "price"], "o", color="red",
+             ms=markersize, fillstyle="none")
+    plt.title(f"Price for trade sizes over {percentile} percentile between {start_time} \n and {end_time}")
+    plt.xlabel("Date")
+    plt.ylabel("Price")
+    plt.tight_layout()
+
+    if savefig:
+        path += f"/price_by_qty_{start_time.replace(' ', '_').replace(':', '-')}_{end_time.replace(' ', '_').replace(':', '-')}.{format}"
+        plt.savefig(path, format=format)
+
+    if show:
+        plt.show()   
+
+def plot_price_by_abs_qty(start_time: str, end_time: str, quantity: float = 2.0,
+                          show: bool = True, savefig: bool = False, path: str = "",
+                          format: str = "png", markersize: int = 2):
+    engine = create_engine(db_url)
+    query = f"""
+    SELECT time, price, order_type
+    FROM trades
+    WHERE time BETWEEN '{start_time}' AND '{end_time}' AND
+        quantity >= {quantity};
+    """
+    df = pd.read_sql(query, engine)
+    buy_mask = df["order_type"] == "Buy"
+    sell_mask = df["order_type"] == "Sell"
+
+    plt.figure(figsize=(10, 6))
+    plt.plot(df.loc[buy_mask, "time"], df.loc[buy_mask, "price"], "o", color="green",
+             ms=markersize, fillstyle="none")
+    plt.plot(df.loc[sell_mask, "time"], df.loc[sell_mask, "price"], "o", color="red",
+             ms=markersize, fillstyle="none")
+    plt.title(f"Price for trade sizes over {quantity} between {start_time} \n and {end_time}")
+    plt.xlabel("Date")
+    plt.ylabel("Price")
+    plt.tight_layout()
+
+    if savefig:
+        path += f"/price_by_abs_qty_{start_time.replace(' ', '_').replace(':', '-')}_{end_time.replace(' ', '_').replace(':', '-')}.{format}"
+        plt.savefig(path, format=format)
+
+    if show:
+        plt.show()   
+
+
 def plot_buy_sell_ratio(start_time: str, end_time: str, interval: str = "day",
                         show: bool = True, savefig: bool = False, path: str = "",
                         format: str = "pdf"):
