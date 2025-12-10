@@ -69,6 +69,7 @@ def plot_candlesticks(start_time: str, end_time: str, interval: str = "day",
     """
     vol_df = pd.read_sql(vol_query, engine)
     df = pd.merge(df, vol_df, on="date", how="inner")
+    df = df.sort_values(by="date")
     df = df.set_index("date")
     df = df[["open", "high", "low", "close", "volume"]]
     
@@ -80,6 +81,59 @@ def plot_candlesticks(start_time: str, end_time: str, interval: str = "day",
     if show:    
         mpf.plot(df, type="candle", style="yahoo", figsize=(14, 7), volume=True,
                  mav=mav, title=f"Prices between {start_time} and {end_time} at {interval} interval")
+
+def plot_returns(start_time: str, end_time: str, interval: str = "day",
+                 bins: int = 5, log: bool = True, show: bool = True, 
+                 savefig: bool = False, path: str = "", format: str = "pdf"):
+    engine = create_engine(db_url)
+    open_query = f"""
+    SELECT date, price AS open
+    FROM (
+        SELECT 
+            date_trunc('{interval}', time) AS date,
+            price,
+            ROW_NUMBER() OVER (PARTITION BY date_trunc('{interval}', time)
+            ORDER BY time ASC) AS row_number
+        FROM trades
+        WHERE time BETWEEN '{start_time}' AND '{end_time}'
+    ) t
+    WHERE t.row_number = 1;
+    """
+    open_df = pd.read_sql(open_query, engine)
+    
+    close_query = f"""
+    SELECT date, price AS close
+    FROM (
+        SELECT 
+            date_trunc('{interval}', time) AS date,
+            price,
+            ROW_NUMBER() OVER (PARTITION BY date_trunc('{interval}', time)
+            ORDER BY time DESC) AS row_number
+        FROM trades
+        WHERE time BETWEEN '{start_time}' AND '{end_time}'
+    ) t
+    WHERE t.row_number = 1;
+    """
+    close_df = pd.read_sql(close_query, engine)
+    df = pd.merge(open_df, close_df, on="date", how="inner")
+    df = df.sort_values(by="date")
+    df["returns"] = np.log(df["close"]/df["open"])
+    counts, bins = np.histogram(df["returns"].abs(), bins=bins)
+
+    plt.figure(figsize=(10, 6))
+    if log:
+        plt.loglog(bins[1:], counts, "o", color="black")
+    else:
+        plt.plot(bins[1:], counts, "o", color="black")
+    plt.title(f"Returns histogram between {start_time} \n and {end_time} at {interval} interval")
+    plt.tight_layout()
+
+    if savefig:
+        path += f"/returns_{start_time.replace(' ', '_').replace(':', '-')}_{end_time.replace(' ', '_').replace(':', '-')}_{interval}.{format}"
+        plt.savefig(path, format=format)
+
+    if show:
+        plt.show()  
 
 def plot_price_by_qty(start_time: str, end_time: str, percentile: float = 0.99,
                       show: bool = True, savefig: bool = False, path: str = "",
@@ -93,7 +147,8 @@ def plot_price_by_qty(start_time: str, end_time: str, percentile: float = 0.99,
             SELECT percentile_cont({percentile}) WITHIN GROUP (ORDER BY quantity ASC)
             FROM trades
             WHERE time BETWEEN '{start_time}' AND '{end_time}'
-        );
+        )
+    ORDER BY time;
     """
     df = pd.read_sql(query, engine)
     buy_mask = df["order_type"] == "Buy"
@@ -124,7 +179,8 @@ def plot_price_by_abs_qty(start_time: str, end_time: str, quantity: float = 2.0,
     SELECT time, price, order_type
     FROM trades
     WHERE time BETWEEN '{start_time}' AND '{end_time}' AND
-        quantity >= {quantity};
+        quantity >= {quantity}
+    ORDER BY time;
     """
     df = pd.read_sql(query, engine)
     buy_mask = df["order_type"] == "Buy"
@@ -184,6 +240,7 @@ def plot_buy_sell_ratio(start_time: str, end_time: str, interval: str = "day",
 
     df = pd.merge(buy_df, sell_df, on="date", how="inner")
     df["buy_sell_ratio"] = df["buy_volume"] / df["sell_volume"]
+    df = df.sort_values(by="date")
     
     plt.figure(figsize=(10, 6))
     plt.plot(df["date"], df["buy_sell_ratio"], color="blue", linewidth=1.5)
@@ -206,10 +263,10 @@ def plot_boxplot(start_time: str, end_time: str, interval: str = "day",
     query = f"""
     SELECT date_trunc('{interval}', time) AS date, quantity
     FROM trades
-    WHERE time BETWEEN '{start_time}' AND '{end_time}';
+    WHERE time BETWEEN '{start_time}' AND '{end_time}'
+    ORDER BY time;
     """
     df = pd.read_sql(query, engine)
-    df = df.sort_values("date")
     
     if interval == "day":
         frequency = "D"
@@ -221,6 +278,7 @@ def plot_boxplot(start_time: str, end_time: str, interval: str = "day",
         frequency = "s"
     else:
         raise Exception(f"Invalid interval. (interval={interval})")
+   
     df["date"] = df["date"].dt.floor(frequency)
     max_value = df["quantity"].quantile(upper_quant)
     df["quantity"] = df["quantity"].clip(upper=max_value)
@@ -285,6 +343,7 @@ def plot_buy_sell_histogram(start_time: str, end_time: str, bins: int = 100,
     df = pd.read_sql(query, engine)
     buy_df = df[df["quantity"] >= 0.0]
     sell_df = df[df["quantity"] <= 0.0]
+    df = df.sort_values(by="date")
 
     fig, ax = plt.subplots(figsize=(10, 6))
     ax.set_title(f"Histogram of trades between {start_time} \n and {end_time}")
@@ -310,7 +369,8 @@ def plot_vol_delta(start_time: str, end_time: str, show: bool = True,
             ELSE -quantity
         END AS quantity
     FROM trades
-    WHERE time BETWEEN '{start_time}' AND '{end_time}';
+    WHERE time BETWEEN '{start_time}' AND '{end_time}'
+    ORDER BY time;
     """
     df = pd.read_sql(query, engine)
     df["cvd"] = df["quantity"].cumsum()
@@ -337,7 +397,8 @@ def plot_tick_imbalance(start_time: str, end_time: str, show: bool = True,
             ELSE -1
         END AS quantity
     FROM trades
-    WHERE time BETWEEN '{start_time}' AND '{end_time}';
+    WHERE time BETWEEN '{start_time}' AND '{end_time}'
+    ORDER BY time;
     """
     df = pd.read_sql(query, engine)
     df["tick_imbalance"] = df["quantity"].cumsum()
@@ -365,7 +426,8 @@ def plot_correlation_funcs(start_time: str, end_time: str, corr_distance: int = 
             ELSE -1
         END signed_qty
     FROM trades
-    WHERE time BETWEEN '{start_time}' AND '{end_time}';
+    WHERE time BETWEEN '{start_time}' AND '{end_time}'
+    ORDER BY time;
     """
     df = pd.read_sql(query, engine)
     corr_size = np.ones(corr_distance)
@@ -426,7 +488,8 @@ def plot_correlation_length(start_time: str, end_time: str, corr_distance: int =
             ELSE -1
         END AS signed_qty
     FROM trades
-    WHERE time BETWEEN '{start_time}' AND '{end_time}';
+    WHERE time BETWEEN '{start_time}' AND '{end_time}'
+    ORDER BY time;
     """
     df = pd.read_sql(query, engine)
     corr_df = df.groupby("date")["signed_qty"].apply(lambda x: autocorr_lag(x, corr_distance))
