@@ -135,6 +135,35 @@ def plot_returns(start_time: str, end_time: str, interval: str = "day",
     if show:
         plt.show()  
 
+def plot_volume_histogram(start_time: str, end_time: str, interval: str = "day",
+                          bins: int = 5, log: bool = True, show: bool = True, 
+                          savefig: bool = False, path: str = "", format: str = "pdf"):
+    engine = create_engine(db_url) 
+    vol_query = f"""
+    SELECT date_trunc('{interval}', time) AS date, SUM(quantity) AS volume
+    FROM trades
+    WHERE time BETWEEN '{start_time}' AND '{end_time}' 
+    GROUP BY date_trunc('{interval}', time);
+    """
+    df = pd.read_sql(vol_query, engine)
+    counts, bins = np.histogram(df["volume"], bins=bins)
+
+    plt.figure(figsize=(10, 6))
+    if log:
+        plt.loglog(bins[1:], counts, "o", color="black")
+    else:
+        plt.plot(bins[1:], counts, "o", color="black")
+    plt.title(f"Volume histogram between {start_time} \n and {end_time} at {interval} interval")
+    plt.tight_layout()
+
+    if savefig:
+        path += f"/volume_{start_time.replace(' ', '_').replace(':', '-')}_{end_time.replace(' ', '_').replace(':', '-')}_{interval}.{format}"
+        plt.savefig(path, format=format)
+
+    if show:
+        plt.show()
+ 
+
 def plot_price_by_qty(start_time: str, end_time: str, percentile: float = 0.99,
                       show: bool = True, savefig: bool = False, path: str = "",
                       format: str = "png", markersize: int = 2):
