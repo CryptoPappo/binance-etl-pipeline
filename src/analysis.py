@@ -135,6 +135,58 @@ def plot_returns(start_time: str, end_time: str, interval: str = "day",
     if show:
         plt.show()  
 
+def plot_price_diff(start_time: str, end_time: str, interval: int = 1000,
+                    bins: int = 5, log: bool = True, show: bool = True, 
+                    savefig: bool = False, path: str = "", format: str = "pdf"):
+    engine = create_engine(db_url)
+    query = f"""
+    WITH diffs AS (
+        SELECT 
+            ABS(LEAD(price, {interval}) OVER (ORDER BY time) - price) AS price_diff
+        FROM trades
+        WHERE time BETWEEN '{start_time}' AND '{end_time}'
+        ORDER BY time
+    ),
+    const AS (
+        SELECT 
+            MAX(price_diff) AS max_diff,
+            MIN(price_diff) AS min_diff
+        FROM diffs
+    )       
+    SELECT c.min_diff + p.bucket * (c.max_diff-c.min_diff)/{bins} AS buckets,
+        p.counts
+    FROM (
+        SELECT
+            WIDTH_BUCKET(d.price_diff,
+                        c.min_diff,
+                        c.max_diff,
+                        {bins}) AS bucket,
+            COUNT(*) AS counts
+        FROM diffs d
+        CROSS JOIN const c
+        WHERE d.price_diff IS NOT NULL
+        GROUP BY bucket
+        ORDER BY bucket) p
+    CROSS JOIN const c;
+    """
+    df = pd.read_sql(query, engine)
+    print(df)
+
+    plt.figure(figsize=(10, 6))
+    if log:
+        plt.loglog(df.buckets, df.counts, "o", color="black")
+    else:
+        plt.plot(df.buckets, df.counts, "o", color="black")
+    plt.title(f"Price difference histogram between {start_time} \n and {end_time} at {interval} orders interval")
+    plt.tight_layout()
+
+    if savefig:
+        path += f"/price_diff_{start_time.replace(' ', '_').replace(':', '-')}_{end_time.replace(' ', '_').replace(':', '-')}_{interval}.{format}"
+        plt.savefig(path, format=format)
+
+    if show:
+        plt.show() 
+
 def plot_volume_histogram(start_time: str, end_time: str, interval: str = "day",
                           bins: int = 5, log: bool = True, show: bool = True, 
                           savefig: bool = False, path: str = "", format: str = "pdf"):
