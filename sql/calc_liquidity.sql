@@ -3,6 +3,7 @@ WITH dif_cte AS (
 		time,
 		price,
 		quantity,
+		quote_qty,
 		order_type,
 		LEAD(price, 1) OVER (ORDER BY time) - price AS dif
 	FROM trades
@@ -14,6 +15,7 @@ dif_clean AS (
 		time,
 		price,
 		quantity,
+		quote_qty,
 		order_type,
 		CASE
 			WHEN dif < 0 AND order_type = 'Buy' THEN 0
@@ -28,6 +30,7 @@ zero_flags AS (
 		time,
 		price,
 		quantity,
+		quote_qty,
 		order_type,
 		dif,
 		CASE
@@ -45,6 +48,7 @@ zero_groups AS (
 		time,
 		price,
 		quantity,
+		quote_qty,
 		order_type,
 		dif,
 		SUM(zero_block_start) OVER (ORDER BY time) AS zero_group
@@ -58,7 +62,8 @@ full_table AS (
 		MIN(price) AS price,
 		MAX(order_type) AS order_type,
 		MAX(dif) AS dif,
-		SUM(quantity) AS quantity
+		SUM(quantity) AS quantity,
+		SUM(quote_qty) AS quote_qty
 	FROM zero_groups
 	WHERE dif = 0
 	GROUP BY zero_group
@@ -70,7 +75,8 @@ full_table AS (
 		price,
 		order_type,
 		dif,
-		quantity
+		quantity,
+		quote_qty
 	FROM zero_groups
 	WHERE dif <> 0
 ),
@@ -81,6 +87,7 @@ zero_new_flag AS (
 		price,
 		order_type,
 		quantity,
+		quote_qty,
 		dif,
 		CASE 
 			WHEN dif = 0
@@ -105,6 +112,7 @@ zero_new_groups AS (
 		order_type,
 		dif,
 		quantity,
+		quote_qty,
 		SUM(zero_block_start) OVER (ORDER BY time) AS zero_group
 	FROM zero_new_flag
 ),
@@ -116,7 +124,8 @@ new_full_table AS (
 		MIN(price) AS price,
 		MAX(order_type) AS order_type,
 		MAX(dif) AS dif,
-		SUM(quantity) AS quantity
+		SUM(quantity) AS quantity,
+		SUM(quote_qty) AS quote_qty
 	FROM zero_new_groups
 	WHERE dif = 0
 	GROUP BY zero_group
@@ -128,10 +137,104 @@ new_full_table AS (
 		price,
 		order_type,
 		dif,
-		quantity
+		quantity,
+		quote_qty
 	FROM zero_new_groups
 	WHERE dif <> 0
 	ORDER BY trade_id
+),
+full_clean_table AS (
+	SELECT 
+		zero_group,
+		trade_id,
+		time,
+		price,
+		order_type,
+		dif,
+		CASE
+			WHEN dif <> 0
+				AND ABS(LAG(dif, 1) OVER (ORDER BY time)) < 0.0001
+				AND LAG(order_type, 1) OVER (ORDER BY time) = order_type 
+				THEN LAG(quantity, 1) OVER (ORDER BY time) + quantity
+			WHEN dif <> 0
+				AND ABS(LAG(dif, 2) OVER (ORDER BY time)) < 0.0001
+				AND LAG(order_type, 2) OVER (ORDER BY time) = order_type 
+				THEN LAG(quantity, 2) OVER (ORDER BY time) + quantity
+			ELSE quantity
+		END AS quantity,
+		CASE
+			WHEN dif <> 0
+				AND ABS(LAG(dif, 1) OVER (ORDER BY time)) < 0.0001
+				AND LAG(order_type, 1) OVER (ORDER BY time) = order_type 
+				THEN LAG(quote_qty, 1) OVER (ORDER BY time) + quote_qty
+			WHEN dif <> 0
+				AND ABS(LAG(dif, 2) OVER (ORDER BY time)) < 0.0001
+				AND LAG(order_type, 2) OVER (ORDER BY time) = order_type 
+				THEN LAG(quote_qty, 2) OVER (ORDER BY time) + quote_qty
+			ELSE quote_qty
+		END AS quote_qty
+	FROM new_full_table
+),
+new_dif_table AS (
+	SELECT 
+		trade_id,
+		time,
+		price,
+		order_type,
+		quantity,
+		quote_qty,
+		CASE
+			WHEN order_type = 'Sell' THEN 1/SQRT(LEAD(price, 1) OVER (ORDER BY time)) - 1/SQRT(price)
+			ELSE SQRT(LEAD(price, 1) OVER (ORDER BY time)) - SQRT(price)
+		END AS dif
+	FROM full_clean_table
+	WHERE dif <> 0
+),
+liquidity_table AS (
+	SELECT 
+		trade_id,
+		time,
+		price,
+		order_type,
+		quantity,
+		quote_qty,
+		CASE
+			WHEN order_type = 'Sell' THEN quantity/dif
+			ELSE quote_qty/dif
+		END AS liquidity
+	FROM new_dif_table
+	WHERE dif <> 0
+),
+block_flags AS (
+	SELECT 
+		time,
+		price,
+		order_type,
+		liquidity,
+		CASE 
+			WHEN order_type <> LAG(order_type, 1) OVER (ORDER BY time)
+			THEN 1
+			ELSE 0
+		END AS block_flag
+	FROM liquidity_table
+),
+blocks AS (
+	SELECT 
+		time,
+		price,
+		order_type,
+		liquidity,
+		SUM(block_flag) OVER (ORDER BY time) AS block_id
+	FROM block_flags
 )
-SELECT * 
-FROM new_full_table;
+SELECT 
+	block_id,
+	order_type,
+	CASE
+		WHEN order_type = 'Sell' THEN MAX(price)
+		ELSE MIN(price)
+	END AS open,
+	AVG(liquidity) AS avg_liquidity
+FROM blocks
+GROUP BY block_id, order_type
+ORDER by block_id;
