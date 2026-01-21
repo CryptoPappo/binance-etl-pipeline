@@ -2,7 +2,7 @@ import yaml
 import pathlib
 from typing import Tuple, Union
 import pandas as pd
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from sqlalchemy.engine.base import Engine
 import mplfinance as mpf
 import matplotlib.pyplot as plt
@@ -81,6 +81,45 @@ def plot_candlesticks(start_time: str, end_time: str, interval: str = "day",
     if show:    
         mpf.plot(df, type="candle", style="yahoo", figsize=(14, 7), volume=True,
                  mav=mav, title=f"Prices between {start_time} and {end_time} at {interval} interval")
+
+def plot_liquidity(start_time: str, end_time: str, show: bool = True, 
+                   savefig: bool = False, path: str = "", format: str = "pdf",
+                   sma: int = 100):
+    engine = create_engine(db_url)
+    with open("/root/binance-etl-pipeline/sql/calc_liquidity.sql") as f:
+        sql = f.read()
+
+    params = {
+            "start_time": start_time,
+            "end_time": end_time
+    }
+    df = pd.read_sql(text(sql), engine, params=params)
+    df = df.sort_values(by="time")
+    buys = df[df["order_type"] == "Buy"]
+    sells = df[df["order_type"] == "Sell"]
+    buys = buys[buys["avg_liquidity"] > 0]
+    sells = sells[sells["avg_liquidity"] > 0]
+    buys["SMA"] = buys["avg_liquidity"].rolling(window=sma).mean()
+    sells["SMA"] = sells["avg_liquidity"].rolling(window=sma).mean()
+
+    fig, ax = plt.subplots(2, 1, figsize=(10, 6), sharex=True) 
+    fig.suptitle(f"Price and liquidity between {start_time} \n and {end_time}")
+    ax[0].set_title("Price")
+    ax[1].set_title("Liquidity")
+    ax[1].set_yscale("log")
+
+    _ = ax[0].plot(sells["time"], sells["open"], color="black")
+    _ = ax[1].plot(buys["time"], buys["avg_liquidity"], "o", color="green", markersize=2)
+    _ = ax[1].plot(sells["time"], sells["avg_liquidity"], "o", color="red", markersize=2)
+    _ = ax[1].plot(buys["time"], buys["SMA"], color="blue")
+    _ = ax[1].plot(sells["time"], sells["SMA"], color="yellow")
+
+    if savefig:
+        path += f"/liquidity_{start_time.replace(' ', '_').replace(':', '-')}_{end_time.replace(' ', '_').replace(':', '-')}.{format}"
+        plt.savefig(path, format=format)
+
+    if show:
+        plt.show()  
 
 def plot_returns(start_time: str, end_time: str, interval: str = "day",
                  bins: int = 5, log: bool = True, show: bool = True, 

@@ -7,8 +7,8 @@ WITH dif_cte AS (
 		order_type,
 		LEAD(price, 1) OVER (ORDER BY time) - price AS dif
 	FROM trades
-	WHERE time BETWEEN '2025-11-18 21:00:00'
-			AND '2025-11-18 21:10:00'
+	WHERE time BETWEEN :start_time
+		AND :end_time
 ), 
 dif_clean AS (
 	SELECT trade_id,
@@ -230,6 +230,7 @@ blocks AS (
 SELECT 
 	block_id,
 	order_type,
+	MIN(time) AS time,
 	CASE
 		WHEN order_type = 'Sell' THEN MAX(price)
 		ELSE MIN(price)
