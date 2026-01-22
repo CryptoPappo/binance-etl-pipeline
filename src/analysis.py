@@ -121,6 +121,108 @@ def plot_liquidity(start_time: str, end_time: str, show: bool = True,
     if show:
         plt.show()  
 
+def plot_liquidity_sma_ratio(start_time: str, end_time: str, show: bool = True, 
+                   savefig: bool = False, path: str = "", format: str = "pdf",
+                   sma: int = 100):
+    engine = create_engine(db_url)
+    with open("/root/binance-etl-pipeline/sql/calc_liquidity.sql") as f:
+        sql = f.read()
+
+    params = {
+            "start_time": start_time,
+            "end_time": end_time
+    }
+    df = pd.read_sql(text(sql), engine, params=params)
+    df = df.sort_values(by="time")
+    buys = df[df["order_type"] == "Buy"]
+    sells = df[df["order_type"] == "Sell"]
+    buys = buys[buys["avg_liquidity"] > 0]
+    sells = sells[sells["avg_liquidity"] > 0]
+    buys["SMA"] = buys["avg_liquidity"].rolling(window=sma).mean()
+    sells["SMA"] = sells["avg_liquidity"].rolling(window=sma).mean()
+    buys.reset_index(drop=True, inplace=True)
+    sells.reset_index(drop=True, inplace=True)
+    buys["ratio"] = buys["SMA"].div(sells["SMA"])
+
+    fig, ax = plt.subplots(2, 1, figsize=(10, 6), sharex=True) 
+    fig.suptitle(f"Price and liquidity sma ratio between {start_time} \n and {end_time}")
+    ax[0].set_title("Price")
+    ax[1].set_title("Liquidity sma ratio")
+
+    _ = ax[0].plot(df["time"], df["open"], color="black")
+    _ = ax[1].plot(buys["time"], buys["ratio"], color="black")
+
+    if savefig:
+        path += f"/liquidity_sma_ratio_{start_time.replace(' ', '_').replace(':', '-')}_{end_time.replace(' ', '_').replace(':', '-')}.{format}"
+        plt.savefig(path, format=format)
+
+    if show:
+        plt.show()  
+
+def plot_liquidity_ratio(start_time: str, end_time: str, show: bool = True, 
+                         savefig: bool = False, path: str = "", format: str = "pdf",
+                         sma: int = 100):
+    engine = create_engine(db_url)
+    with open("/root/binance-etl-pipeline/sql/calc_liquidity_ratio.sql") as f:
+        sql = f.read()
+
+    params = {
+            "start_time": start_time,
+            "end_time": end_time
+    }
+    df = pd.read_sql(text(sql), engine, params=params)
+    df = df.sort_values(by="time")
+    df = df[df["ratio"]  > 0]
+    df["SMA"] = df["ratio"].rolling(window=sma).mean()
+
+    fig, ax = plt.subplots(2, 1, figsize=(10, 6), sharex=True) 
+    fig.suptitle(f"Liquidity ratio and price between {start_time} \n and {end_time}")
+    ax[0].set_title("Price")
+    ax[1].set_title("Liquidity ratio")
+    ax[1].set_yscale("log")
+
+    _ = ax[0].plot(df["time"], df["open"], color="black")
+    _ = ax[1].plot(df["time"], df["ratio"], "o", color="black", markersize=2)
+    _ = ax[1].plot(df["time"], df["SMA"], color="red")
+
+    if savefig:
+        path += f"/liquidity_ratio_{start_time.replace(' ', '_').replace(':', '-')}_{end_time.replace(' ', '_').replace(':', '-')}.{format}"
+        plt.savefig(path, format=format)
+
+    if show:
+        plt.show()  
+
+def plot_liquidity_ratio_hist(start_time: str, end_time: str, show: bool = True, 
+                              savefig: bool = False, path: str = "", format: str = "pdf",
+                              log: bool = True, bins: int = 100):
+    engine = create_engine(db_url)
+    with open("/root/binance-etl-pipeline/sql/calc_liquidity_ratio.sql") as f:
+        sql = f.read()
+
+    params = {
+            "start_time": start_time,
+            "end_time": end_time
+    }
+    df = pd.read_sql(text(sql), engine, params=params)
+    df = df.sort_values(by="time")
+    df = df[df["ratio"]  > 0]
+    counts, bins = np.histogram(df["ratio"], bins=bins)
+
+    fig, ax = plt.subplots(figsize=(10, 6)) 
+    fig.suptitle(f"Liquidity ratio histogram between {start_time} \n and {end_time}")
+    
+    if log:
+        _ = ax.loglog(bins[1:], counts, "o", color="black")
+    else:
+        _ = ax.plot(bins[1:], counts, "o", color="black")
+
+    if savefig:
+        path += f"/liquidity_ratio_hist_{start_time.replace(' ', '_').replace(':', '-')}_{end_time.replace(' ', '_').replace(':', '-')}.{format}"
+        plt.savefig(path, format=format)
+
+    if show:
+        plt.show() 
+
 def plot_returns(start_time: str, end_time: str, interval: str = "day",
                  bins: int = 5, log: bool = True, show: bool = True, 
                  savefig: bool = False, path: str = "", format: str = "pdf"):
