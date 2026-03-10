@@ -17,6 +17,22 @@ def load_db(query: str, engine: Engine) -> pd.DataFrame:
 
     return df
 
+
+def get_trades(start_time: str, end_time: str):
+    engine = create_engine(db_url)
+    query = f"""
+    SELECT time, 
+         CASE 
+            WHEN order_type = 'Buy' THEN quote_qty
+            ELSE -quote_qty
+        END AS qty
+    FROM trades
+    WHERE time BETWEEN '{start_time}' AND '{end_time}'
+    """
+    df = pd.read_sql(query, engine)
+
+    return df
+
 def plot_candlesticks(start_time: str, end_time: str, interval: str = "day",
                       mav: Union[int, Tuple[int], None] = None,  show: bool = True, 
                       savefig: bool = False, path: str = "", format: str = "pdf"):
