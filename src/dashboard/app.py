@@ -6,8 +6,8 @@ import pandas as pd
 
 engine = sa.create_engine(st.secrets["db_url"])
 
-script_dir = os.path.dirname(__file__)
-sql_dir = os.path.join(script_dir, "../../sql/candlesticks.sql")
+script_dir = os.path.dirname(os.path.abspath(__file__))
+sql_dir = os.path.join(script_dir, "..", "..", "/sql/candlesticks.sql")
 with open(sql_dir) as f:
     sql = f.read()
 
