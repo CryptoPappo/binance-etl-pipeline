@@ -1,16 +1,12 @@
 import os
-import yaml
 import sqlalchemy as sa
 import streamlit as st
 import plotly.graph_objects as go
 import pandas as pd
 
-script_dir = os.path.dirname(__file__)
-config_dir = os.path.join(script_dir, "../../config/config.yaml")
-with open(config_dir) as f:
-    config = yaml.safe_load(f)
-engine = sa.create_engine(config["database"]["url"])
+engine = sa.create_engine(st.secrets["db_url"])
 
+script_dir = os.path.dirname(__file__)
 sql_dir = os.path.join(script_dir, "../../sql/candlesticks.sql")
 with open(sql_dir) as f:
     sql = f.read()
