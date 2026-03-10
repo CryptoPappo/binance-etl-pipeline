@@ -19,7 +19,7 @@ df = pd.read_sql(sa.text(sql), engine, params=params)
 fig = go.Figure(
         data=[
             go.Candlestick(
-                x=df["time"],
+                x=df["time_interval"],
                 open=df["open"],
                 high=df["high"],
                 low=df["low"],
