@@ -19,6 +19,12 @@ interval_label = st.selectbox(
 
 interval = INTERVAL_OPTIONS[interval_label]
 
+range_mode = st.radio(
+    "Time range",
+    options=["Preset", "Custom"],
+    horizontal=True,
+)
+
 now = datetime.now()
 
 if range_mode == "Preset":
