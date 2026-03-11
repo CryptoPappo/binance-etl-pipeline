@@ -11,7 +11,7 @@ INTERVAL_OPTIONS = {
         "Monthly": "month",
 }
 
-interval_lable = st.selectbox(
+interval_label = st.selectbox(
         "Select time interval",
         options=list(INTERVAL_OPTIONS.keys()),
         index=0,
