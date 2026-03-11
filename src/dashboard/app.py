@@ -28,7 +28,7 @@ RANGE_OPTIONS = {
 
 range_label = st.selectbox(
         "Time range", 
-        list(RANGE_OPTIONS.keys())
+        list(RANGE_OPTIONS.keys()),
         index=0
 )
 delta = RANGE_OPTIONS[range_label]
