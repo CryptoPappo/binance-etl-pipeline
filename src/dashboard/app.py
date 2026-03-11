@@ -44,8 +44,8 @@ engine = sa.create_engine(st.secrets["db_url"])
 
 def build_candles_query(
         interval: str,
-        start_time: str,
-        end_time: str
+        start_time: datetime,
+        end_time: datetime
 ) -> str:
     return f"""
     SELECT
@@ -65,7 +65,7 @@ def load_candles(interval, start_time, end_time):
     query = build_candles_query(interval, start_time, end_time)
     return pd.read_sql(query, engine)
 
-df = load_candles(interval, str(start_time), str(end_time))
+df = load_candles(interval, start_time, end_time)
 
 fig = go.Figure(
         data=[
