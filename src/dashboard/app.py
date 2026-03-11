@@ -30,7 +30,7 @@ def build_candles_query(interval: str) -> str:
         MIN(price)                               AS low,
         (ARRAY_AGG(price ORDER BY time DESC))[1] AS close
     FROM trades
-    WHERE time BETWEEN 2025-12-01 AND 2025-12-08
+    WHERE time BETWEEN '2025-12-01' AND '2025-12-08'
     GROUP BY time_interval
     ORDER BY time_interval;
     """
