@@ -19,34 +19,47 @@ interval_label = st.selectbox(
 
 interval = INTERVAL_OPTIONS[interval_label]
 
-RANGE_OPTIONS = {
-    "Last 24 hours": timedelta(days=1),
-    "Last 7 days": timedelta(days=7),
-    "Last 30 days": timedelta(days=30),
-    "Last 90 days": timedelta(days=90),
-}
+now = datetime.now()
 
-range_label = st.selectbox(
-        "Time range", 
-        list(RANGE_OPTIONS.keys()),
-        index=0
-)
-delta = RANGE_OPTIONS[range_label]
+if range_mode == "Preset":
+    PRESETS = {
+        "Last 24 hours": timedelta(hours=24),
+        "Last 7 days": timedelta(days=7),
+        "Last 30 days": timedelta(days=30),
+    }
 
-end_time = datetime.now()
-start_time = (end_time - delta).date()
-end_time = end_time.date()
+    label = st.selectbox("Preset range", PRESETS)
+    delta = PRESETS[label]
 
-with st.expander("Custom range"):
-    start_time = st.date_input("Start date")
-    end_time = st.date_input("End date")
+    start_time = now - delta
+    end_time = now
+
+else:
+    col1, col2 = st.columns(2)
+
+    with col1:
+        start_date = st.date_input("Start date")
+
+    with col2:
+        end_date = st.date_input("End date")
+
+    start_time = datetime.combine(start_date, datetime.min.time())
+    end_time = datetime.combine(end_date, datetime.max.time())
+
+if start_time >= end_time:
+    st.error("Start time must be before end time")
+    st.stop()
+
+MAX_RANGE = timedelta(days=180)
+if end_time - start_time > MAX_RANGE:
+    st.warning("Selected range is very large and may be slow.")
 
 engine = sa.create_engine(st.secrets["db_url"])
 
 def build_candles_query(
         interval: str,
-        start_time: date,
-        end_time: date
+        start_time: datetime | date,
+        end_time: datetime | date
 ) -> str:
     return f"""
     SELECT
