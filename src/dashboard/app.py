@@ -2,7 +2,7 @@ import sqlalchemy as sa
 import streamlit as st
 import plotly.graph_objects as go
 import pandas as pd
-from datetime import datetime, timedelta
+from datetime import datetime, date, timedelta
 
 INTERVAL_OPTIONS = {
         "Hourly": "hour",
@@ -44,8 +44,8 @@ engine = sa.create_engine(st.secrets["db_url"])
 
 def build_candles_query(
         interval: str,
-        start_time: datetime,
-        end_time: datetime
+        start_time: date,
+        end_time: date
 ) -> str:
     return f"""
     SELECT
@@ -65,7 +65,7 @@ def load_candles(interval, start_time, end_time):
     query = build_candles_query(interval, start_time, end_time)
     return pd.read_sql(query, engine)
 
-df = load_candles(interval, start_time, end_time)
+df = load_candles(interval, start_time.date(), end_time.date())
 
 fig = go.Figure(
         data=[
