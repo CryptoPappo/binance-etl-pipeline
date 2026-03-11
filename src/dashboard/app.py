@@ -20,7 +20,7 @@ interval_label = st.selectbox(
 interval = INTERVAL_OPTIONS[interval_label]
 
 RANGE_OPTIONS = {
-    "Last 24 hours": timedelta(hours=24),
+    "Last 24 hours": timedelta(days=1),
     "Last 7 days": timedelta(days=7),
     "Last 30 days": timedelta(days=30),
     "Last 90 days": timedelta(days=90),
@@ -34,7 +34,8 @@ range_label = st.selectbox(
 delta = RANGE_OPTIONS[range_label]
 
 end_time = datetime.utcnow()
-start_time = end_time - delta
+start_time = (end_time - delta).date()
+end_time = end_time.date()
 
 with st.expander("Custom range"):
     start_time = st.date_input("Start date")
@@ -65,7 +66,7 @@ def load_candles(interval, start_time, end_time):
     query = build_candles_query(interval, start_time, end_time)
     return pd.read_sql(query, engine)
 
-df = load_candles(interval, start_time.date(), end_time.date())
+df = load_candles(interval, start_time, end_time)
 
 fig = go.Figure(
         data=[
