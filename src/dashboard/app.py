@@ -33,7 +33,7 @@ range_label = st.selectbox(
 )
 delta = RANGE_OPTIONS[range_label]
 
-end_time = datetime.utcnow()
+end_time = datetime.now()
 start_time = (end_time - delta).date()
 end_time = end_time.date()
 
