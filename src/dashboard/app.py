@@ -93,12 +93,12 @@ figure = make_subplots(rows=2, cols=1, shared_xaxes=True, row_heights=[0.7, 0.3]
 
 figure.add_trace(
         go.Candlestick(
-            x=df.index,
+            x=df.time_interval,
             open=df.open, 
             high=df.high, 
             low=df.low,
             close=df.close,
-            name='Price',
+            showlegend=False,
             increasing_line_color='#26a69a',
             decreasing_line_color='#ef5350'
         ),
@@ -111,7 +111,7 @@ red_volume_df = df[df['close'] < df['open']]
 
 figure.add_trace(
         go.Bar(
-            x=red_volume_df.index,
+            x=red_volume_df.time_interval,
             y=red_volume_df.volume,
             showlegend=False,
             marker_color='#ef5350'
@@ -122,7 +122,7 @@ figure.add_trace(
 
 figure.add_trace(
         go.Bar(
-            x=green_volume_df.index,
+            x=green_volume_df.time_interval,
             y=green_volume_df.volume,
             showlegend=False,
             marker_color='#26a69a'
