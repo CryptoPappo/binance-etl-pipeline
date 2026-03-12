@@ -147,7 +147,8 @@ figure.add_trace(
             x=df.time_interval,
             y=df.volume,
             name="Trade Volume",
-            marker_color="blue"
+            marker_color="blue",
+            zorder=1
         ),
         secondary_y=True
 )
@@ -158,7 +159,8 @@ figure.add_trace(
             y=df.trades_count,
             mode="lines",
             name="Trade Count",
-            marker_color="indianred"
+            marker_color="red",
+            zorder=2
         ),
         secondary_y=False
 )
