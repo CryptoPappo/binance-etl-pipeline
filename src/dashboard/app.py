@@ -156,7 +156,7 @@ figure.add_trace(
         px.line(
             x=df.time_interval,
             y=df.trades_count,
-            label={
+            labels={
                 "time_interval": "Date", 
                 "trades_count": "Trade Count",
             }
