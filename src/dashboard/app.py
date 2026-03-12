@@ -70,13 +70,19 @@ def build_candles_query(
 ) -> str:
     return f"""
     SELECT
-        date_trunc('{interval}', time) AS time_interval,
+        date_trunc('{interval}', time)           AS time_interval,
         (ARRAY_AGG(price ORDER BY time ASC))[1]  AS open,
         MAX(price)                               AS high,
         MIN(price)                               AS low,
         (ARRAY_AGG(price ORDER BY time DESC))[1] AS close,
         SUM(quantity)                            AS volume,
-        COUNT(*)                                 AS trades_count
+        COUNT(*)                                 AS trades_count,
+        SUM(
+            CASE 
+                WHEN order_type = 'Buy' THEN quantity
+                WHEN order_type = 'Sell' THEN -quantity
+            END
+        )                                        AS signed_volume
     FROM trades
     WHERE time BETWEEN '{start_time}' AND '{end_time}'
     GROUP BY time_interval
@@ -172,4 +178,33 @@ figure.update_yaxes(title_text="Trade Count", secondary_y=False)
 figure.update_xaxes(title_text="Date")
 
 st.subheader(f"{interval_label} Trade Volume and Counts")
+st.plotly_chart(figure)
+
+
+figure = make_subplots()
+
+figure.add_trace(
+        go.Bar(
+            x=red_volume_df.time_interval,
+            y=red_volume_df.signed_volume/red_volume_df.volume,
+            showlegend=False,
+            marker_color='#ef5350'
+        )
+)
+
+figure.add_trace(
+        go.Bar(
+            x=green_volume_df.time_interval,
+            y=green_volume_df.signed_volume/green_volume_df.volume,
+            showlegend=False,
+            marker_color='#26a69a'
+        )
+)
+
+figure.update(layout_xaxis_rangeslider_visible=False)
+figure.update_layout(title="BTC/USDT")
+figure.update_yaxes(title_text="Signed Volume")
+figure.update_xaxes(title_text="Date")
+
+st.subheader(f"{interval_label} Signed Volume")
 st.plotly_chart(figure)
