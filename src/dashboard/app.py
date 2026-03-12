@@ -2,7 +2,6 @@ import sqlalchemy as sa
 import streamlit as st
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
-import plotly.express as px
 import pandas as pd
 from datetime import datetime, date, timedelta
 
@@ -153,13 +152,11 @@ figure.add_trace(
 )
 
 figure.add_trace(
-        px.line(
+        go.Scatter(
             x=df.time_interval,
             y=df.trades_count,
-            labels={
-                "time_interval": "Date", 
-                "trades_count": "Trade Count",
-            }
+            mode="lines",
+            name="Trade Count"
         ),
         secondary_y=False
 )
