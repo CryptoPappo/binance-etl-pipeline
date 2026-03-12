@@ -1,6 +1,7 @@
 import sqlalchemy as sa
 import streamlit as st
 import plotly.graph_objects as go
+from plotly.subplots import make_subplots
 import pandas as pd
 from datetime import datetime, date, timedelta
 
@@ -73,7 +74,8 @@ def build_candles_query(
         (ARRAY_AGG(price ORDER BY time ASC))[1]  AS open,
         MAX(price)                               AS high,
         MIN(price)                               AS low,
-        (ARRAY_AGG(price ORDER BY time DESC))[1] AS close
+        (ARRAY_AGG(price ORDER BY time DESC))[1] AS close,
+        SUM(quantity)                            AS volume
     FROM trades
     WHERE time BETWEEN '{start_time}' AND '{end_time}'
     GROUP BY time_interval
@@ -87,17 +89,54 @@ def load_candles(interval, start_time, end_time):
 
 df = load_candles(interval, start_time, end_time)
 
-fig = go.Figure(
-        data=[
-            go.Candlestick(
-                x=df["time_interval"],
-                open=df["open"],
-                high=df["high"],
-                low=df["low"],
-                close=df["close"]
-                )
-        ]
+figure = make_subplots(rows=2, cols=1, shared_xaxes=True, row_heights=[0.7, 0.3])
+
+figure.add_trace(
+        go.Candlestick(
+            x=df.index,
+            open=df.open, 
+            high=df.high, 
+            low=df.low,
+            close=df.close,
+            name='Price',
+            increasing_line_color='#26a69a',
+            decreasing_line_color='#ef5350'
+        ),
+        row=1, 
+        col=1
 )
 
+green_volume_df = df[df['close'] > df['open']]
+red_volume_df = df[df['close'] < df['open']]
+
+figure.add_trace(
+        go.Bar(
+            x=red_volume_df.index,
+            y=red_volume_df.volume,
+            showlegend=False,
+            marker_color='#ef5350'
+        ),
+        row=2,
+        col=1
+)
+
+figure.add_trace(
+        go.Bar(
+            x=green_volume_df.index,
+            y=green_volume_df.volume,
+            showlegend=False,
+            marker_color='#26a69a'
+        ),
+        row=2,
+        col=1
+)
+
+figure.update(layout_xaxis_rangeslider_visible=False)
+figure.update_layout(title=f'BTC/USDT', yaxis_title=f'Price')
+figure.update_yaxes(title_text=f'Volume', row=2, col=1)
+figure.update_xaxes(title_text='Date', row=2)
+
 st.subheader(f"{interval_label} Candlesticks")
-st.plotly_chart(fig)
+st.plotly_chart(figure)
+
+
