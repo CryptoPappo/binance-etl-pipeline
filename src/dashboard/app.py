@@ -2,6 +2,7 @@ import sqlalchemy as sa
 import streamlit as st
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
+import plotly.express as px
 import pandas as pd
 from datetime import datetime, date, timedelta
 
@@ -75,7 +76,8 @@ def build_candles_query(
         MAX(price)                               AS high,
         MIN(price)                               AS low,
         (ARRAY_AGG(price ORDER BY time DESC))[1] AS close,
-        SUM(quantity)                            AS volume
+        SUM(quantity)                            AS volume,
+        COUNT(*)                                 AS trades_count
     FROM trades
     WHERE time BETWEEN '{start_time}' AND '{end_time}'
     GROUP BY time_interval
@@ -139,4 +141,34 @@ figure.update_xaxes(title_text='Date', row=2)
 st.subheader(f"{interval_label} Candlesticks")
 st.plotly_chart(figure)
 
+figure = make_subplots(specs=[[{"secondary_y": True}]])
 
+figure.add_trace(
+        go.Bar(
+            x=df.time_interval,
+            y=df.volume,
+            name="Trade Volume",
+        ),
+        secondary_y=True
+)
+
+figure.add_trace(
+        px.line(
+            x=df.time_interval,
+            y=df.trades_count,
+            label={
+                "time_interval": "Date", 
+                "trades_count": "Trade Count",
+            }
+        ),
+        secondary_y=False
+)
+
+figure.update(layout_xaxis_rangeslider_visible=False)
+figure.update_layout(title="BTC/USDT")
+figure.update_yaxes(title_text="Trade Volume", secondary_y=True)
+figure.update_yaxes(title_text="Trade Count", secondary_y=False)
+figure.update_xaxes(title_text="Date")
+
+st.subheader(f"{interval_label} Trade Volume and Counts")
+st.plotly_chart(figure)
