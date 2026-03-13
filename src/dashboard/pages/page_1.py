@@ -3,7 +3,7 @@ import streamlit as st
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import pandas as pd
-from datetime import datetime, timedelta
+import datetime as dt
 
 INTERVAL_OPTIONS = {
         "Hourly": "hour",
@@ -26,13 +26,13 @@ range_mode = st.radio(
     horizontal=True,
 )
 
-now = datetime.now()
+now = dt.datetime.now(dt.UTC)
 
 if range_mode == "Preset":
     PRESETS = {
-        "Last 24 hours": timedelta(hours=24),
-        "Last 7 days": timedelta(days=7),
-        "Last 30 days": timedelta(days=30),
+        "Last 24 hours": dt.timedelta(hours=24),
+        "Last 7 days": dt.timedelta(days=7),
+        "Last 30 days": dt.timedelta(days=30),
     }
 
     label = st.selectbox("Preset range", PRESETS)
@@ -50,14 +50,14 @@ else:
     with col2:
         end_date = st.date_input("End date")
 
-    start_time = datetime.combine(start_date, datetime.min.time())
-    end_time = datetime.combine(end_date, datetime.max.time())
+    start_time = datetime.combine(start_date, dt.datetime.min.time())
+    end_time = datetime.combine(end_date, dt.datetime.max.time())
 
 if start_time >= end_time:
     st.error("Start time must be before end time")
     st.stop()
 
-MAX_RANGE = timedelta(days=180)
+MAX_RANGE = dt.timedelta(days=180)
 if end_time - start_time > MAX_RANGE:
     st.warning("Selected range is very large and may be slow.")
 
@@ -65,8 +65,8 @@ engine = sa.create_engine(st.secrets["db_url"])
 
 def build_candles_query(
         interval: str,
-        start_time: datetime,
-        end_time: datetime
+        start_time: dt.datetime,
+        end_time: dt.datetime
 ) -> str:
     return f"""
     SELECT

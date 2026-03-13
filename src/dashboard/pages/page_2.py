@@ -3,7 +3,7 @@ import streamlit as st
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import pandas as pd
-from datetime import datetime, timedelta
+import datetime as dt
 
 range_mode = st.radio(
     "Time range",
@@ -11,14 +11,14 @@ range_mode = st.radio(
     horizontal=True,
 )
 
-now = datetime.now()
+now = dt.datetime.now(dt.UTC)
 
 if range_mode == "Preset":
     PRESETS = {
-        "Last 1 hour": timedelta(hours=1),
-        "Last 4 hours": timedelta(hours=4),
-        "Last 12 hours": timedelta(hours=12),
-        "Last 24 hours": timedelta(hours=24),
+        "Last 1 hour": dt.timedelta(hours=1),
+        "Last 4 hours": dt.timedelta(hours=4),
+        "Last 12 hours": dt.timedelta(hours=12),
+        "Last 24 hours": dt.timedelta(hours=24),
     }
 
     label = st.selectbox("Preset range", PRESETS)
@@ -36,22 +36,22 @@ else:
     with col2:
         end_date = st.datetime_input("End date")
 
-    start_time = datetime.combine(start_date, datetime.min.time())
-    end_time = datetime.combine(end_date, datetime.max.time())
+    start_time = datetime.combine(start_date, dt.datetime.min.time())
+    end_time = datetime.combine(end_date, dt.datetime.max.time())
 
 if start_time >= end_time:
     st.error("Start time must be before end time")
     st.stop()
 
-MAX_RANGE = timedelta(days=90)
+MAX_RANGE = dt.timedelta(days=90)
 if end_time - start_time > MAX_RANGE:
     st.warning("Selected range is very large and may be slow.")
 
 engine = sa.create_engine(st.secrets["db_url"])
 
 def build_sign_correlations_query(
-        start_time: datetime,
-        end_time: datetime
+        start_time: dt.datetime,
+        end_time: dt.datetime
 ) -> str:
     return f"""
     WITH signed_trades AS (
@@ -73,7 +73,7 @@ def build_sign_correlations_query(
             LAG(sign, lag) OVER (ORDER BY time) AS sign_lag,
             lag
         FROM signed_trades,
-             generate_series(1, 100) AS lag
+             generate_series(1, 10) AS lag
     ) t
     WHERE sign_lag IS NOT NULL
     GROUP BY lag
