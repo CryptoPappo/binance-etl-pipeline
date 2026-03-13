@@ -49,7 +49,7 @@ if end_time - start_time > MAX_RANGE:
 
 engine = sa.create_engine(st.secrets["db_url"])
 
-def build_sign_correlations_query_(
+def build_sign_correlations_query(
         start_time: datetime,
         end_time: datetime
 ) -> str:
@@ -78,27 +78,6 @@ def build_sign_correlations_query_(
     WHERE sign_lag IS NOT NULL
     GROUP BY lag
     ORDER BY lag;
-    """
-
-def build_sign_correlations_query(
-        start_time: datetime,
-        end_time: datetime
-) -> str:
-    return f"""
-    WITH signed_trades AS (
-        SELECT
-            time,
-            CASE
-                WHEN order_type = 'Buy'  THEN  1
-                WHEN order_type = 'Sell' THEN -1
-            END AS sign
-        FROM trades
-        WHERE time BETWEEN '{start_time}' AND '{end_time}'
-    )
-    SELECT
-        1 AS lag,
-        AVG(sign * LAG(sign, 1) OVER (ORDER BY time)) AS autocorrelation
-    FROM signed_trades;
     """
 
 @st.cache_data(ttl=3600)
