@@ -86,6 +86,7 @@ def load_sign_correlations(start_time, end_time):
     return pd.read_sql(query, engine)
 
 df_sign = load_sign_correlations(start_time, end_time)
+st.write(df_sign)
 
 figure = make_subplots()
 
@@ -93,6 +94,7 @@ figure.add_trace(
         go.Scatter(
             x=df_sign.lag,
             y=df_sign.autocorrelation,
+            mode="markers",
             marker_color="red"
         )
 )
