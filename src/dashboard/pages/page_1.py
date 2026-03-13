@@ -3,7 +3,7 @@ import streamlit as st
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import pandas as pd
-from datetime import datetime, date, timedelta
+from datetime import datetime, timedelta
 
 INTERVAL_OPTIONS = {
         "Hourly": "hour",
@@ -65,8 +65,8 @@ engine = sa.create_engine(st.secrets["db_url"])
 
 def build_candles_query(
         interval: str,
-        start_time: datetime | date,
-        end_time: datetime | date
+        start_time: datetime,
+        end_time: datetime
 ) -> str:
     return f"""
     SELECT
