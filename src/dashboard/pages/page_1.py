@@ -50,8 +50,8 @@ else:
     with col2:
         end_date = st.date_input("End date")
 
-    start_time = datetime.combine(start_date, dt.datetime.min.time())
-    end_time = datetime.combine(end_date, dt.datetime.max.time())
+    start_time = dt.datetime.combine(start_date, dt.datetime.min.time())
+    end_time = dt.datetime.combine(end_date, dt.datetime.max.time())
 
 if start_time >= end_time:
     st.error("Start time must be before end time")
