@@ -86,10 +86,14 @@ def load_sign_correlations(start_time, end_time):
 
 df_sign = load_sign_correlations(start_time, end_time)
 
-figure = go.Scatter(
-        x=df_sign.lag,
-        y=df_sign.autocorrelation,
-        marker_color="red"
+figure = make_subplots()
+
+figure.add_trace(
+        go.Scatter(
+            x=df_sign.lag,
+            y=df_sign.autocorrelation,
+            marker_color="red"
+        )
 )
 
 figure.update(layout_xaxis_rangeslider_visible=False)
