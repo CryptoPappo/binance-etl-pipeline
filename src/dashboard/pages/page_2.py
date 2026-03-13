@@ -83,7 +83,7 @@ def load_sign_correlations(start_time, end_time):
     query = build_sign_correlations_query(start_time, end_time)
     return pd.read_sql(query, engine)
 
-df_sign = load_sign_correaltions(start_time, end_time)
+df_sign = load_sign_correlations(start_time, end_time)
 
 figure = go.Scatter(
         x=df_sign.lag,
