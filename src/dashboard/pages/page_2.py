@@ -58,24 +58,20 @@ def build_sign_correlations_query(
         SELECT
             time,
             CASE
-                WHEN order_type = 'Buy'  THEN  1
-                WHEN order_type = 'Sell' THEN -1
-            END AS sign
+                WHEN order_type = 'Buy' THEN 1
+                ELSE -1
+            END AS sign,
+            ROW_NUMBER() OVER (ORDER BY time) AS rn
         FROM trades
         WHERE time BETWEEN '{start_time}' AND '{end_time}'
     )
     SELECT
         lag,
-        AVG(sign * sign_lag) AS autocorrelation
-    FROM (
-        SELECT
-            sign,
-            LAG(sign, lag) OVER (ORDER BY time) AS sign_lag,
-            lag
-        FROM signed_trades,
-             generate_series(1, 10) AS lag
-    ) t
-    WHERE sign_lag IS NOT NULL
+        AVG(t1.sign * t2.sign) AS autocorrelation
+    FROM signed_trades t1
+    JOIN signed_trades t2
+        ON t2.rn = t1.rn - lag
+    CROSS JOIN generate_series(1,10) AS lag
     GROUP BY lag
     ORDER BY lag;
     """
