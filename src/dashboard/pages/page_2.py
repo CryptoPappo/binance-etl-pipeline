@@ -14,9 +14,10 @@ now = datetime.now()
 
 if range_mode == "Preset":
     PRESETS = {
+        "Last 1 hour": timedelta(hours=1),
+        "Last 4 hours": timedelta(hours=4),
+        "Last 12 hours": timedelta(hours=12),
         "Last 24 hours": timedelta(hours=24),
-        "Last 7 days": timedelta(days=7),
-        "Last 30 days": timedelta(days=30),
     }
 
     label = st.selectbox("Preset range", PRESETS)
@@ -29,10 +30,10 @@ else:
     col1, col2 = st.columns(2)
 
     with col1:
-        start_date = st.date_input("Start date")
+        start_date = st.datetime_input("Start date")
 
     with col2:
-        end_date = st.date_input("End date")
+        end_date = st.datetime_input("End date")
 
     start_time = datetime.combine(start_date, datetime.min.time())
     end_time = datetime.combine(end_date, datetime.max.time())
