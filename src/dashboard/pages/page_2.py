@@ -128,7 +128,7 @@ def load_sign_correlations_(start_time, end_time):
     return df
 
 t0 = time.time()
-df_sign = load_sign_correlations(start_time, end_time)
+df_sign = load_sign_correlations_(start_time, end_time)
 st.write(f"Time elapsed {time.time() - t0}")
 st.write(df_sign)
 
@@ -147,6 +147,8 @@ figure.update(layout_xaxis_rangeslider_visible=False)
 figure.update_layout(title="BTC/USDT")
 figure.update_yaxes(title_text="Correlation")
 figure.update_xaxes(title_text="Lag")
+figure.update_xaxes(type="log")
+figure.update_yaxes(type="log")
 
 st.subheader("Trade Sign Autocorrelation")
 st.plotly_chart(figure)
