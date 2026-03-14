@@ -52,7 +52,6 @@ if end_time - start_time > MAX_RANGE:
 engine = sa.create_engine(st.secrets["db_url"])
 
 def read_trades_in_chunks(
-        engine: sa.Engine,
         start_time: dt.datetime,
         end_time: dt.datetime,
         chunk_size: int = 100000
@@ -90,7 +89,7 @@ def update_autocorr(signs, buffer, sums, counts):
         buffer[-1] = signs[i]
 
 @st.cache_data(ttl=3600)
-def load_sign_correlations(engine, start_time, end_time):
+def load_sign_correlations(start_time, end_time):
     k_max = 100
     buffer = np.zeros(k_max, dtype=np.int8)
     sums = np.zeros(k_max)
@@ -109,7 +108,7 @@ def load_sign_correlations(engine, start_time, end_time):
     )
     return df
 
-df_sign = load_sign_correlations(engine, start_time, end_time)
+df_sign = load_sign_correlations(start_time, end_time)
 st.write(df_sign)
 
 figure = make_subplots()
