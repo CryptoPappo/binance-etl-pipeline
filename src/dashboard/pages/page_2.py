@@ -54,7 +54,7 @@ engine = sa.create_engine(st.secrets["db_url"])
 def read_trades_in_chunks(
         start_time: dt.datetime,
         end_time: dt.datetime,
-        chunk_size: int = 100000
+        chunk_size: int = 1000000
 ) -> Iterator[pd.DataFrame]:
     query = sa.text(f"""
         SELECT
@@ -81,6 +81,27 @@ def read_trades_in_chunks(
 
 @st.cache_data(ttl=3600)
 def load_sign_correlations(start_time, end_time):
+    k_max = 100
+    autocorr = np.zeros(k_max)
+    counter = 0
+    last_chunk = pd.DataFrame({"time": np.zeros(k_max), "sign": np.zeros(k_max)})
+    for chunk in read_trades_in_chunks(start_time, end_time):
+        counter += 1
+        df = pd.concat([last_chunk, chunk])
+        for i in range(1, k_max+1):
+            autocorr[i-1] = (df["sign"] * df["sign"].shift(-i)).sum() 
+        last_chunk = chunk[-k_max:]
+
+    df = pd.DataFrame(
+            {
+                "lag": np.arange(1, k_max+1),
+                "autocorrelation": autocorr / counter
+            }
+    )
+    return df
+
+@st.cache_data(ttl=3600)
+def load_sign_correlations_(start_time, end_time):
     k_max = 100
     buffer = np.zeros(k_max, dtype=np.int8)
     sums = np.zeros(k_max)
