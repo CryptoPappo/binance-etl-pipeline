@@ -79,15 +79,6 @@ def read_trades_in_chunks(
         ):
             yield chunk
 
-def update_autocorr(signs, buffer, sums, counts):
-    n = len(signs)
-    for i in range(n):
-        valid = buffer != 0
-        sums[valid] += signs[i] * buffer[valid]
-        counts[valid] += 1
-        buffer[:-1] = buffer[1:]
-        buffer[-1] = signs[i]
-
 @st.cache_data(ttl=3600)
 def load_sign_correlations(start_time, end_time):
     k_max = 100
@@ -104,9 +95,9 @@ def load_sign_correlations(start_time, end_time):
                     counts[k-1] += 1
             buffer = np.roll(buffer, -1)
             buffer[-1] = s  
-   autocorr = sums / counts
-
-   df = pd.DataFrame(
+    autocorr = sums / counts
+    
+    df = pd.DataFrame(
             {
                 "lag": np.arange(1, k_max+1),
                 "autocorrelation": autocorr
