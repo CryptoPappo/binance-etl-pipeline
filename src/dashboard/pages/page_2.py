@@ -101,36 +101,7 @@ def load_sign_correlations(start_time, end_time):
     )
     return df
 
-@st.cache_data(ttl=3600)
-def load_sign_correlations_(start_time, end_time):
-    k_max = 100
-    buffer = np.zeros(k_max, dtype=np.int8)
-    sums = np.zeros(k_max)
-    counts = np.zeros(k_max)
-
-    for chunk in read_trades_in_chunks(start_time, end_time):
-        signs = chunk["sign"].to_numpy(dtype=np.int8)
-        for s in signs:
-            for k in range(1, k_max + 1):
-                if buffer[-k] != 0:
-                    sums[k-1] += s * buffer[-k]
-                    counts[k-1] += 1
-            buffer = np.roll(buffer, -1)
-            buffer[-1] = s  
-    autocorr = sums / counts
-    
-    df = pd.DataFrame(
-            {
-                "lag": np.arange(1, k_max+1),
-                "autocorrelation": autocorr
-            }
-    )
-    return df
-
-t0 = time.time()
 df_sign = load_sign_correlations_(start_time, end_time)
-st.write(f"Time elapsed {time.time() - t0}")
-st.write(df_sign)
 
 figure = make_subplots()
 
@@ -152,4 +123,3 @@ figure.update_yaxes(type="log")
 
 st.subheader("Trade Sign Autocorrelation")
 st.plotly_chart(figure)
-
