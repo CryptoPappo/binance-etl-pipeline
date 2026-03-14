@@ -7,6 +7,8 @@ import numpy as np
 import datetime as dt
 from collections.abc import Iterator
 
+CHUNK_SIZE = 1000000
+
 range_mode = st.radio(
     "Time range",
     options=["Preset", "Custom"],
@@ -53,8 +55,7 @@ engine = sa.create_engine(st.secrets["db_url"])
 
 def read_trades_in_chunks(
         start_time: dt.datetime,
-        end_time: dt.datetime,
-        chunk_size: int = 1000000
+        end_time: dt.datetime
 ) -> Iterator[pd.DataFrame]:
     query = sa.text(f"""
         SELECT
@@ -76,7 +77,7 @@ def read_trades_in_chunks(
                 "start_time": start_time,
                 "end_time": end_time,
             },
-            chunksize=chunk_size,
+            chunksize=CHUNK_SIZE,
         ):
             yield chunk
 
@@ -85,25 +86,19 @@ def load_correlations(start_time, end_time):
     k_max = 100
     autocorr_sign = np.zeros(k_max)
     autocorr_size = np.zeros(k_max)
-    counter = 0
-    last_chunk = pd.DataFrame(
-            {
-                "time": np.zeros(k_max),
-                "sign": np.zeros(k_max),
-                "quantity": np.zeros(k_max)
-            }
-    )
+    counter = np.zeros(k_max)
+    signs = np.empty(CHUNK_SIZE, dtype=np.int8)
+    sizes = np.empty(CHUNK_SIZE, dtype=np.float32)
+    
     for chunk in read_trades_in_chunks(start_time, end_time):
-        counter += len(chunk)
-        df = pd.concat([last_chunk, chunk])
-        del last_chunk
-        df["quantity"] = df["sign"] * df["quantity"]
+        n = len(chunk)
+        signs[:n] = chunk["sign"].to_numpy(dtype=np.int8, copy=False)
+        sizes[:n] = signs[:n] * chunk["quantity"].to_numpy(dtype=np.float32, copy=False)
         for i in range(1, k_max+1):
-            autocorr_sign[i-1] = (df["sign"] * df["sign"].shift(-i)).sum()
-            autocorr_size[i-1] = (df["quantity"] * df["quantity"].shift(-i)).sum()
+            autocorr_sign[i-1] += np.dot(signs[i:n], signs[:n-i])
+            autocorr_size[i-1] += np.dot(sizes[i:n], sizes[:n-i])
+            counts[i-1] += n - i
 
-        last_chunk = chunk[-k_max:].copy(deep=True)
-        del df
         del chunk
 
     df = pd.DataFrame(
