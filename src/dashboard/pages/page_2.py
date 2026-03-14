@@ -96,6 +96,7 @@ def load_correlations(start_time, end_time):
     for chunk in read_trades_in_chunks(start_time, end_time):
         counter += len(chunk)
         df = pd.concat([last_chunk, chunk])
+        del last_chunk
         df["quantity"] = df["sign"] * df["quantity"]
         for i in range(1, k_max+1):
             autocorr_sign[i-1] = (df["sign"] * df["sign"].shift(-i)).sum()
@@ -103,6 +104,7 @@ def load_correlations(start_time, end_time):
 
         last_chunk = chunk[-k_max:].copy(deep=True)
         del df
+        del chunk
 
     df = pd.DataFrame(
             {
