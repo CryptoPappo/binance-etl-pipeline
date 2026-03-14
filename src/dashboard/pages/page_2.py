@@ -96,7 +96,6 @@ def load_correlations(start_time, end_time):
     for chunk in read_trades_in_chunks(start_time, end_time):
         counter += len(chunk)
         df = pd.concat([last_chunk, chunk])
-        df["quantity"] = np.log1p(df["quantity"])
         for i in range(1, k_max+1):
             autocorr_sign[i-1] = (df["sign"] * df["sign"].shift(-i)).sum()
             autocorr_size[i-1] = (df["quantity"] * df["quantity"].shift(-i)).sum()
