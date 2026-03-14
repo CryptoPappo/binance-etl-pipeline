@@ -102,6 +102,7 @@ def load_correlations(start_time, end_time):
             autocorr_size[i-1] = (df["quantity"] * df["quantity"].shift(-i)).sum()
 
         last_chunk = chunk[-k_max:].copy(deep=True)
+        del df
 
     df = pd.DataFrame(
             {
