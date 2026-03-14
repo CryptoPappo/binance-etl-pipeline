@@ -26,7 +26,7 @@ range_mode = st.radio(
     horizontal=True,
 )
 
-now = dt.datetime.now(dt.UTC)
+now = dt.datetime.now(dt.UTC).replace(minute=0, second=0, microsecond=0)
 
 if range_mode == "Preset":
     PRESETS = {

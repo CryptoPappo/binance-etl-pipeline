@@ -6,6 +6,7 @@ import pandas as pd
 import numpy as np
 import datetime as dt
 from collections.abc import Iterator
+import time
 
 range_mode = st.radio(
     "Time range",
@@ -13,7 +14,7 @@ range_mode = st.radio(
     horizontal=True,
 )
 
-now = dt.datetime.now(dt.UTC)
+now = dt.datetime.now(dt.UTC).replace(minute=0, second=0, microsecond=0)
 
 if range_mode == "Preset":
     PRESETS = {
@@ -86,11 +87,11 @@ def load_sign_correlations(start_time, end_time):
     counter = 0
     last_chunk = pd.DataFrame({"time": np.zeros(k_max), "sign": np.zeros(k_max)})
     for chunk in read_trades_in_chunks(start_time, end_time):
-        counter += 1
+        counter += len(chunk)
         df = pd.concat([last_chunk, chunk])
         for i in range(1, k_max+1):
             autocorr[i-1] = (df["sign"] * df["sign"].shift(-i)).sum() 
-        last_chunk = chunk[-k_max:]
+        last_chunk = chunk[-k_max:].copy(deep=True)
 
     df = pd.DataFrame(
             {
@@ -126,7 +127,9 @@ def load_sign_correlations_(start_time, end_time):
     )
     return df
 
+t0 = time.time()
 df_sign = load_sign_correlations(start_time, end_time)
+st.write(f"Time elapsed {time.time() - t0}")
 st.write(df_sign)
 
 figure = make_subplots()
