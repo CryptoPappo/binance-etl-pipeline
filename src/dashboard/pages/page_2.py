@@ -101,7 +101,7 @@ def load_sign_correlations(start_time, end_time):
     )
     return df
 
-df_sign = load_sign_correlations_(start_time, end_time)
+df_sign = load_sign_correlations(start_time, end_time)
 
 figure = make_subplots()
 
