@@ -86,7 +86,7 @@ def load_correlations(start_time, end_time):
     k_max = 100
     autocorr_sign = np.zeros(k_max)
     autocorr_size = np.zeros(k_max)
-    counter = np.zeros(k_max)
+    counts = np.zeros(k_max)
     signs = np.empty(CHUNK_SIZE, dtype=np.int8)
     sizes = np.empty(CHUNK_SIZE, dtype=np.float32)
     
@@ -104,8 +104,8 @@ def load_correlations(start_time, end_time):
     df = pd.DataFrame(
             {
                 "lag": np.arange(1, k_max+1),
-                "autocorr_sign": autocorr_sign / counter,
-                "autocorr_size": autocorr_size / counter
+                "autocorr_sign": autocorr_sign / counts,
+                "autocorr_size": autocorr_size / counts
             }
     )
     return df
