@@ -3,7 +3,9 @@ import streamlit as st
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import pandas as pd
+import numpy as np
 import datetime as dt
+from collections.abc import Iterator
 
 range_mode = st.radio(
     "Time range",
@@ -49,39 +51,65 @@ if end_time - start_time > MAX_RANGE:
 
 engine = sa.create_engine(st.secrets["db_url"])
 
-def build_sign_correlations_query(
+def read_trades_in_chunks(
+        engine: sa.Engine,
         start_time: dt.datetime,
-        end_time: dt.datetime
-) -> str:
-    return f"""
-    WITH signed_trades AS (
+        end_time: dt.datetime,
+        chunk_size: int = 100000
+) -> Iterator[pd.DataFrame]:
+    query = sa.text("""
         SELECT
             time,
             CASE
-                WHEN order_type = 'Buy' THEN 1
-                ELSE -1
-            END AS sign,
-            ROW_NUMBER() OVER (ORDER BY time) AS rn
+                WHEN order_type = 'Buy'  THEN  1
+                WHEN order_type = 'Sell' THEN -1
+            END AS sign
         FROM trades
-        WHERE time BETWEEN '{start_time}' AND '{end_time}'
-    )
-    SELECT
-        lag,
-        AVG(t1.sign * t2.sign) AS autocorrelation
-    FROM signed_trades t1
-    JOIN signed_trades t2
-        ON t2.rn = t1.rn - lag
-    CROSS JOIN generate_series(1,10) AS lag
-    GROUP BY lag
-    ORDER BY lag;
-    """
+        WHERE time BETWEEN :start_time AND :end_time
+        ORDER BY time
+    """)
+    with engine.connect() as conn:
+        for chunk in pd.read_sql(
+            query,
+            conn,
+            params={
+                "start_time": start_time,
+                "end_time": end_time,
+            },
+            chunksize=chunk_size,
+        ):
+            yield chunk
+
+def update_autocorr(signs, buffer, sums, counts):
+    n = len(signs)
+    for i in range(n):
+        valid = buffer != 0
+        sums[valid] += signs[i] * buffer[valid]
+        counts[valid] += 1
+        buffer[:-1] = buffer[1:]
+        buffer[-1] = signs[i]
 
 @st.cache_data(ttl=3600)
-def load_sign_correlations(start_time, end_time):
-    query = build_sign_correlations_query(start_time, end_time)
-    return pd.read_sql(query, engine)
+def load_sign_correlations(engine, start_time, end_time):
+    k_max = 100
+    buffer = np.zeros(k_max, dtype=np.int8)
+    sums = np.zeros(k_max)
+    counts = np.zeros(k_max)
 
-df_sign = load_sign_correlations(start_time, end_time)
+    for chunk in read_trades_in_chunks(engine, start, end):
+        signs = chunk["sign"].to_numpy(dtype=np.int8)
+        update_autocorr(signs, buffer, sums, counts)
+
+    autocorr = sums / counts
+    df = pd.DataFrame(
+            {
+                "lag": np.arange(1, len(k_max)+1),
+                "autocorrelation": autocorr
+            }
+    )
+    return df
+
+df_sign = load_sign_correlations(engine, start_time, end_time)
 st.write(df_sign)
 
 figure = make_subplots()
