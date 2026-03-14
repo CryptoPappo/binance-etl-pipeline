@@ -6,7 +6,6 @@ import pandas as pd
 import numpy as np
 import datetime as dt
 from collections.abc import Iterator
-import time
 
 range_mode = st.radio(
     "Time range",
@@ -63,7 +62,8 @@ def read_trades_in_chunks(
             CASE
                 WHEN order_type = 'Buy'  THEN  1
                 WHEN order_type = 'Sell' THEN -1
-            END AS sign
+            END AS sign,
+            quantity
         FROM trades
         WHERE time BETWEEN :start_time AND :end_time
         ORDER BY time
@@ -81,34 +81,45 @@ def read_trades_in_chunks(
             yield chunk
 
 @st.cache_data(ttl=3600)
-def load_sign_correlations(start_time, end_time):
+def load_correlations(start_time, end_time):
     k_max = 100
-    autocorr = np.zeros(k_max)
+    autocorr_sign = np.zeros(k_max)
+    autocorr_size = np.zeros(k_max)
     counter = 0
-    last_chunk = pd.DataFrame({"time": np.zeros(k_max), "sign": np.zeros(k_max)})
+    last_chunk = pd.DataFrame(
+            {
+                "time": np.zeros(k_max),
+                "sign": np.zeros(k_max),
+                "quantity": np.zeros(k_max)
+            }
+    )
     for chunk in read_trades_in_chunks(start_time, end_time):
         counter += len(chunk)
         df = pd.concat([last_chunk, chunk])
+        df["quantity"] = np.log1p(df["quantity"])
         for i in range(1, k_max+1):
-            autocorr[i-1] = (df["sign"] * df["sign"].shift(-i)).sum() 
+            autocorr_sign[i-1] = (df["sign"] * df["sign"].shift(-i)).sum()
+            autocorr_size[i-1] = (df["quantity"] * df["quantity"].shift(-i)).sum()
+
         last_chunk = chunk[-k_max:].copy(deep=True)
 
     df = pd.DataFrame(
             {
                 "lag": np.arange(1, k_max+1),
-                "autocorrelation": autocorr / counter
+                "autocorr_sign": autocorr_sign / counter,
+                "autocorr_size": autocorr_size / counter
             }
     )
     return df
 
-df_sign = load_sign_correlations(start_time, end_time)
+df = load_correlations(start_time, end_time)
 
 figure = make_subplots()
 
 figure.add_trace(
         go.Scatter(
-            x=df_sign.lag,
-            y=df_sign.autocorrelation,
+            x=df.lag,
+            y=df.autocorr_sign,
             mode="markers",
             marker_color="red"
         )
@@ -122,4 +133,25 @@ figure.update_xaxes(type="log")
 figure.update_yaxes(type="log")
 
 st.subheader("Trade Sign Autocorrelation")
+st.plotly_chart(figure)
+
+figure = make_subplots()
+
+figure.add_trace(
+        go.Scatter(
+            x=df.lag,
+            y=df.autocorr_size,
+            mode="markers",
+            marker_color="red"
+        )
+)
+
+figure.update(layout_xaxis_rangeslider_visible=False)
+figure.update_layout(title="BTC/USDT")
+figure.update_yaxes(title_text="Correlation")
+figure.update_xaxes(title_text="Lag")
+figure.update_xaxes(type="log")
+figure.update_yaxes(type="log")
+
+st.subheader("Trade Size Autocorrelation")
 st.plotly_chart(figure)
