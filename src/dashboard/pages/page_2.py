@@ -102,7 +102,7 @@ def load_sign_correlations(start_time, end_time):
     autocorr = sums / counts
     df = pd.DataFrame(
             {
-                "lag": np.arange(1, len(k_max)+1),
+                "lag": np.arange(1, k_max+1),
                 "autocorrelation": autocorr
             }
     )
