@@ -56,7 +56,7 @@ def read_trades_in_chunks(
         end_time: dt.datetime,
         chunk_size: int = 100000
 ) -> Iterator[pd.DataFrame]:
-    query = sa.text("""
+    query = sa.text(f"""
         SELECT
             time,
             CASE
@@ -95,7 +95,7 @@ def load_sign_correlations(start_time, end_time):
     sums = np.zeros(k_max)
     counts = np.zeros(k_max)
 
-    for chunk in read_trades_in_chunks(engine, start, end):
+    for chunk in read_trades_in_chunks(engine, start_time, end_time):
         signs = chunk["sign"].to_numpy(dtype=np.int8)
         update_autocorr(signs, buffer, sums, counts)
 
