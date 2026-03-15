@@ -9,6 +9,8 @@ from collections.abc import Iterator
 
 CHUNK_SIZE = 1000000
 
+st.sidebar.header("Time settings")
+
 range_mode = st.radio(
     "Time range",
     options=["Preset", "Custom"],
@@ -47,9 +49,25 @@ if start_time >= end_time:
     st.error("Start time must be before end time")
     st.stop()
 
-MAX_RANGE = dt.timedelta(days=90)
+MAX_RANGE = dt.timedelta(days=14)
 if end_time - start_time > MAX_RANGE:
     st.warning("Selected range is very large and may be slow.")
+
+st.sidebar.header("Correlation settings")
+
+k_max = st.sidebar.slider(
+    "Max lag",
+    min_value=1,
+    max_value=500,
+    value=100
+)
+
+r_len = st.sidebar.number_input(
+    "Trades per return",
+    min_value=1,
+    value=100,
+    step=1
+)
 
 engine = sa.create_engine(st.secrets["db_url"])
 
@@ -84,8 +102,6 @@ def read_trades_in_chunks(
 
 @st.cache_data(ttl=3600)
 def load_correlations(start_time, end_time):
-    k_max = 100
-    r_len = 100
     autocorr_sign = np.zeros(k_max)
     autocorr_size = np.zeros(k_max)
     autocorr_cross = np.zeros(k_max)
