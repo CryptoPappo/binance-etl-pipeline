@@ -89,7 +89,7 @@ def load_correlations(start_time, end_time):
     counts = np.zeros(k_max)
     signs = np.empty(CHUNK_SIZE+k_max, dtype=np.int8)
     sizes = np.empty(CHUNK_SIZE+k_max, dtype=np.float32)
-    signs[:k_max] *= 0.0
+    signs[:k_max] *= 0
     sizes[:k_max] *= 0.0
     start = 0
     for chunk in read_trades_in_chunks(start_time, end_time):
