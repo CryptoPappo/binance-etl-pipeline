@@ -19,10 +19,10 @@ now = dt.datetime.now(dt.UTC).replace(minute=0, second=0, microsecond=0)
 
 if range_mode == "Preset":
     PRESETS = {
-        "Last 1 hour": dt.timedelta(hours=1),
-        "Last 4 hours": dt.timedelta(hours=4),
+        "Last 6 hours": dt.timedelta(hours=6),
         "Last 12 hours": dt.timedelta(hours=12),
         "Last 24 hours": dt.timedelta(hours=24),
+        "Last 48 hours": dt.timedelta(hours=48)
     }
 
     label = st.selectbox("Preset range", PRESETS)
