@@ -87,17 +87,23 @@ def load_correlations(start_time, end_time):
     autocorr_sign = np.zeros(k_max)
     autocorr_size = np.zeros(k_max)
     counts = np.zeros(k_max)
-    signs = np.empty(CHUNK_SIZE, dtype=np.int8)
-    sizes = np.empty(CHUNK_SIZE, dtype=np.float32)
-    
+    signs = np.empty(CHUNK_SIZE+k_max, dtype=np.int8)
+    sizes = np.empty(CHUNK_SIZE+k_max, dtype=np.float32)
+    signs[:k_max] *= 0.0
+    sizes[:k_max] *= 0.0
+    start = 0
     for chunk in read_trades_in_chunks(start_time, end_time):
         n = len(chunk)
-        signs[:n] = chunk["sign"].to_numpy(dtype=np.int8, copy=False)
-        sizes[:n] = signs[:n] * chunk["quantity"].to_numpy(dtype=np.float32, copy=False)
+        signs[k_max:n+k_max] = chunk["sign"].to_numpy(dtype=np.int8, copy=False)
+        sizes[k_max:n+k_max] = signs[k_max:n+k_max] * chunk["quantity"].to_numpy(dtype=np.float32, copy=False)
         for i in range(1, k_max+1):
-            autocorr_sign[i-1] += np.dot(signs[i:n], signs[:n-i])
-            autocorr_size[i-1] += np.dot(sizes[i:n], sizes[:n-i])
-            counts[i-1] += n - i
+            autocorr_sign[i-1] += np.dot(signs[i:n+k_max], signs[:n+k_max-i])
+            autocorr_size[i-1] += np.dot(sizes[i:n+k_max], sizes[:n+k_max-i])
+            counts[i-1] += n + start*k_max - i
+
+        signs[:k_max] = signs[-k_max:]
+        sizes[:k_max] = sizes[-k_max:]
+        start = 1
 
         del chunk
 
