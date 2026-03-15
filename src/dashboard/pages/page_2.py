@@ -159,86 +159,86 @@ def load_correlations(start_time, end_time, k_max, r_len):
 if st.button("Run analysis"):
     df = load_correlations(start_time, end_time, k_max, r_len)
 
-figure = make_subplots()
+    figure = make_subplots()
 
-figure.add_trace(
-        go.Scatter(
-            x=df.lag,
-            y=df.autocorr_sign,
-            mode="markers",
-            marker_color="red"
-        )
-)
+    figure.add_trace(
+            go.Scatter(
+                x=df.lag,
+                y=df.autocorr_sign,
+                mode="markers",
+                marker_color="red"
+            )
+    )
 
-figure.update(layout_xaxis_rangeslider_visible=False)
-figure.update_layout(title="BTC/USDT")
-figure.update_yaxes(title_text="Correlation")
-figure.update_xaxes(title_text="Lag")
-figure.update_xaxes(type="log")
-figure.update_yaxes(type="log")
+    figure.update(layout_xaxis_rangeslider_visible=False)
+    figure.update_layout(title="BTC/USDT")
+    figure.update_yaxes(title_text="Correlation")
+    figure.update_xaxes(title_text="Lag")
+    figure.update_xaxes(type="log")
+    figure.update_yaxes(type="log")
 
-st.subheader("Trade Sign Autocorrelation")
-st.plotly_chart(figure)
+    st.subheader("Trade Sign Autocorrelation")
+    st.plotly_chart(figure)
 
-figure = make_subplots()
+    figure = make_subplots()
 
-figure.add_trace(
-        go.Scatter(
-            x=df.lag,
-            y=df.autocorr_size,
-            mode="markers",
-            marker_color="red"
-        )
-)
+    figure.add_trace(
+            go.Scatter(
+                x=df.lag,
+                y=df.autocorr_size,
+                mode="markers",
+                marker_color="red"
+            )
+    )
 
-figure.update(layout_xaxis_rangeslider_visible=False)
-figure.update_layout(title="BTC/USDT")
-figure.update_yaxes(title_text="Correlation")
-figure.update_xaxes(title_text="Lag")
-figure.update_xaxes(type="log")
-figure.update_yaxes(type="log")
+    figure.update(layout_xaxis_rangeslider_visible=False)
+    figure.update_layout(title="BTC/USDT")
+    figure.update_yaxes(title_text="Correlation")
+    figure.update_xaxes(title_text="Lag")
+    figure.update_xaxes(type="log")
+    figure.update_yaxes(type="log")
 
-st.subheader("Trade Size Autocorrelation")
-st.plotly_chart(figure)
+    st.subheader("Trade Size Autocorrelation")
+    st.plotly_chart(figure)
 
-figure = make_subplots()
+    figure = make_subplots()
 
-figure.add_trace(
-        go.Scatter(
-            x=df.lag,
-            y=df.autocorr_cross,
-            mode="markers",
-            marker_color="red"
-        )
-)
+    figure.add_trace(
+            go.Scatter(
+                x=df.lag,
+                y=df.autocorr_cross,
+                mode="markers",
+                marker_color="red"
+            )
+    )
 
-figure.update(layout_xaxis_rangeslider_visible=False)
-figure.update_layout(title="BTC/USDT")
-figure.update_yaxes(title_text="Correlation")
-figure.update_xaxes(title_text="Lag")
-figure.update_xaxes(type="log")
-figure.update_yaxes(type="log")
+    figure.update(layout_xaxis_rangeslider_visible=False)
+    figure.update_layout(title="BTC/USDT")
+    figure.update_yaxes(title_text="Correlation")
+    figure.update_xaxes(title_text="Lag")
+    figure.update_xaxes(type="log")
+    figure.update_yaxes(type="log")
 
-st.subheader("Trade Sign-Size Cross-Correlation")
-st.plotly_chart(figure)
+    st.subheader("Trade Sign-Size Cross-Correlation")
+    st.plotly_chart(figure)
 
-figure = make_subplots()
+    figure = make_subplots()
 
-figure.add_trace(
-        go.Scatter(
-            x=df.lag,
-            y=df.autocorr_returns,
-            mode="markers",
-            marker_color="red"
-        )
-)
+    figure.add_trace(
+            go.Scatter(
+                x=df.lag,
+                y=df.autocorr_returns,
+                mode="markers",
+                marker_color="red"
+            )
+    )
 
-figure.update(layout_xaxis_rangeslider_visible=False)
-figure.update_layout(title="BTC/USDT")
-figure.update_yaxes(title_text="Correlation")
-figure.update_xaxes(title_text="Lag")
-figure.update_xaxes(type="log")
-figure.update_yaxes(type="log")
+    figure.update(layout_xaxis_rangeslider_visible=False)
+    figure.update_layout(title="BTC/USDT")
+    figure.update_yaxes(title_text="Correlation")
+    figure.update_xaxes(title_text="Lag")
+    figure.update_xaxes(type="log")
+    figure.update_yaxes(type="log")
 
-st.subheader("Absolute Returns Autocorrelation")
-st.plotly_chart(figure)
+    st.subheader("Absolute Returns Autocorrelation")
+    st.plotly_chart(figure)
