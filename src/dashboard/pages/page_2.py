@@ -88,7 +88,7 @@ def load_correlations(start_time, end_time):
     autocorr_sign = np.zeros(k_max)
     autocorr_size = np.zeros(k_max)
     autocorr_cross = np.zeros(k_max)
-    autocorr_returns = np.zerors(k_max)
+    autocorr_returns = np.zeros(k_max)
     counts = np.zeros(k_max)
     signs = np.empty(CHUNK_SIZE+k_max, dtype=np.float32)
     sizes = np.empty(CHUNK_SIZE+k_max, dtype=np.float32)
