@@ -94,119 +94,120 @@ def load_candles(interval, start_time, end_time):
     query = build_candles_query(interval, start_time, end_time)
     return pd.read_sql(query, engine)
 
-df = load_candles(interval, start_time, end_time)
+if st.button("Run analysis"):
+    df = load_candles(interval, start_time, end_time)
 
-figure = make_subplots(rows=2, cols=1, shared_xaxes=True, row_heights=[0.7, 0.3])
+    figure = make_subplots(rows=2, cols=1, shared_xaxes=True, row_heights=[0.7, 0.3])
 
-figure.add_trace(
-        go.Candlestick(
-            x=df.time_interval,
-            open=df.open, 
-            high=df.high, 
-            low=df.low,
-            close=df.close,
-            showlegend=False,
-            increasing_line_color='#26a69a',
-            decreasing_line_color='#ef5350'
-        ),
-        row=1, 
-        col=1
-)
+    figure.add_trace(
+            go.Candlestick(
+                x=df.time_interval,
+                open=df.open, 
+                high=df.high, 
+                low=df.low,
+                close=df.close,
+                showlegend=False,
+                increasing_line_color='#26a69a',
+                decreasing_line_color='#ef5350'
+            ),
+            row=1, 
+            col=1
+    )
 
-green_volume_df = df[df['close'] > df['open']]
-red_volume_df = df[df['close'] < df['open']]
+    green_volume_df = df[df['close'] > df['open']]
+    red_volume_df = df[df['close'] < df['open']]
 
-figure.add_trace(
-        go.Bar(
-            x=red_volume_df.time_interval,
-            y=red_volume_df.volume,
-            showlegend=False,
-            marker_color='#ef5350'
-        ),
-        row=2,
-        col=1
-)
+    figure.add_trace(
+            go.Bar(
+                x=red_volume_df.time_interval,
+                y=red_volume_df.volume,
+                showlegend=False,
+                marker_color='#ef5350'
+            ),
+            row=2,
+            col=1
+    )
 
-figure.add_trace(
-        go.Bar(
-            x=green_volume_df.time_interval,
-            y=green_volume_df.volume,
-            showlegend=False,
-            marker_color='#26a69a'
-        ),
-        row=2,
-        col=1
-)
+    figure.add_trace(
+            go.Bar(
+                x=green_volume_df.time_interval,
+                y=green_volume_df.volume,
+                showlegend=False,
+                marker_color='#26a69a'
+            ),
+            row=2,
+            col=1
+    )
 
-figure.update(layout_xaxis_rangeslider_visible=False)
-figure.update_layout(title=f'BTC/USDT', yaxis_title=f'Price')
-figure.update_yaxes(title_text=f'Volume', row=2, col=1)
-figure.update_xaxes(title_text='Date', row=2)
+    figure.update(layout_xaxis_rangeslider_visible=False)
+    figure.update_layout(title=f'BTC/USDT', yaxis_title=f'Price')
+    figure.update_yaxes(title_text=f'Volume', row=2, col=1)
+    figure.update_xaxes(title_text='Date', row=2)
 
-st.subheader(f"{interval_label} Candlesticks")
-st.plotly_chart(figure)
+    st.subheader(f"{interval_label} Candlesticks")
+    st.plotly_chart(figure)
 
-figure = make_subplots(specs=[[{"secondary_y": True}]])
+    figure = make_subplots(specs=[[{"secondary_y": True}]])
 
-figure.add_trace(
-        go.Bar(
-            x=df.time_interval,
-            y=df.volume,
-            name="Trade Volume",
-            marker_color="blue",
-            zorder=1
-        ),
-        secondary_y=True
-)
+    figure.add_trace(
+            go.Bar(
+                x=df.time_interval,
+                y=df.volume,
+                name="Trade Volume",
+                marker_color="blue",
+                zorder=1
+            ),
+            secondary_y=True
+    )
 
-figure.add_trace(
-        go.Scatter(
-            x=df.time_interval,
-            y=df.trades_count,
-            mode="lines",
-            name="Trade Count",
-            marker_color="red",
-            zorder=2
-        ),
-        secondary_y=False
-)
+    figure.add_trace(
+            go.Scatter(
+                x=df.time_interval,
+                y=df.trades_count,
+                mode="lines",
+                name="Trade Count",
+                marker_color="red",
+                zorder=2
+            ),
+            secondary_y=False
+    )
 
-figure.update(layout_xaxis_rangeslider_visible=False)
-figure.update_layout(title="BTC/USDT")
-figure.update_yaxes(title_text="Trade Volume", secondary_y=True)
-figure.update_yaxes(title_text="Trade Count", secondary_y=False)
-figure.update_xaxes(title_text="Date")
+    figure.update(layout_xaxis_rangeslider_visible=False)
+    figure.update_layout(title="BTC/USDT")
+    figure.update_yaxes(title_text="Trade Volume", secondary_y=True)
+    figure.update_yaxes(title_text="Trade Count", secondary_y=False)
+    figure.update_xaxes(title_text="Date")
 
-st.subheader(f"{interval_label} Trade Volume and Counts")
-st.plotly_chart(figure)
+    st.subheader(f"{interval_label} Trade Volume and Counts")
+    st.plotly_chart(figure)
 
 
-figure = make_subplots()
+    figure = make_subplots()
 
-figure.add_trace(
-        go.Bar(
-            x=red_volume_df.time_interval,
-            y=red_volume_df.signed_volume/red_volume_df.volume,
-            showlegend=False,
-            marker_color='#ef5350'
-        )
-)
+    figure.add_trace(
+            go.Bar(
+                x=red_volume_df.time_interval,
+                y=red_volume_df.signed_volume/red_volume_df.volume,
+                showlegend=False,
+                marker_color='#ef5350'
+            )
+    )
 
-figure.add_trace(
-        go.Bar(
-            x=green_volume_df.time_interval,
-            y=green_volume_df.signed_volume/green_volume_df.volume,
-            showlegend=False,
-            marker_color='#26a69a'
-        )
-)
+    figure.add_trace(
+            go.Bar(
+                x=green_volume_df.time_interval,
+                y=green_volume_df.signed_volume/green_volume_df.volume,
+                showlegend=False,
+                marker_color='#26a69a'
+            )
+    )
 
-figure.update(layout_xaxis_rangeslider_visible=False)
-figure.update_layout(title="BTC/USDT")
-figure.update_yaxes(title_text="Delta Volume")
-figure.update_xaxes(title_text="Date")
+    figure.update(layout_xaxis_rangeslider_visible=False)
+    figure.update_layout(title="BTC/USDT")
+    figure.update_yaxes(title_text="Delta Volume")
+    figure.update_xaxes(title_text="Date")
 
-st.subheader(f"{interval_label} Delta Volume Normalized")
-st.plotly_chart(figure)
+    st.subheader(f"{interval_label} Delta Volume Normalized")
+    st.plotly_chart(figure)
 
 
