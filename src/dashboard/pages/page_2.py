@@ -115,28 +115,32 @@ def load_correlations(start_time, end_time, k_max, r_len):
     start = 0
     for chunk in read_trades_in_chunks(start_time, end_time):
         n = len(chunk)
+        n_ret = n - r_len
         signs[k_max:n+k_max] = chunk["sign"].to_numpy(dtype=np.float32, copy=False)
         sizes[k_max:n+k_max] = signs[k_max:n+k_max] * chunk["quantity"].to_numpy(dtype=np.float32, copy=False)
-        returns[k_max:n+k_max-r_len] = np.abs(
-                np.log(
-                    np.divide(
-                        chunk["price"].to_numpy(dtype=np.float32, copy=False)[r_len:],
-                        chunk["price"].to_numpy(dtype=np.float32, copy=False)[:-r_len]
+        if n_ret > 0:
+            returns[k_max:n_ret+k_max] = np.abs(
+                    np.log(
+                        np.divide(
+                            chunk["price"].to_numpy(dtype=np.float32, copy=False)[r_len:],
+                            chunk["price"].to_numpy(dtype=np.float32, copy=False)[:-r_len]
+                        )
                     )
-                )
-        )
+            )
 
         for i in range(1, k_max+1):
             autocorr_sign[i-1] += np.dot(signs[i:n+k_max], signs[:n+k_max-i])
             autocorr_size[i-1] += np.dot(sizes[i:n+k_max], sizes[:n+k_max-i])
             autocorr_cross[i-1] += np.dot(signs[i:n+k_max], sizes[:n+k_max-i])
-            autocorr_returns[i-1] += np.dot(returns[i:n+k_max-r_len], returns[:n+k_max-i-r_len])
+            if n_ret > k_max:
+                autocorr_returns[i-1] += np.dot(returns[i:n_ret+k_max], returns[:n_ret+k_max-i])
             counts[i-1] += n + start*k_max - i
             counts_ret[i-1] += n + start*k_max - i - r_len
 
         signs[:k_max] = signs[n:n+k_max]
         sizes[:k_max] = sizes[n:n+k_max]
-        returns[:k_max] = returns[n-r_len:n+k_max-r_len]
+        if n_ret > 0:
+            returns[:k_max] = returns[n_ret:n_ret+k_max]
         start = 1
 
         del chunk
@@ -152,7 +156,8 @@ def load_correlations(start_time, end_time, k_max, r_len):
     )
     return df
 
-df = load_correlations(start_time, end_time, k_max, r_len)
+if st.button("Run analysis"):
+    df = load_correlations(start_time, end_time, k_max, r_len)
 
 figure = make_subplots()
 
