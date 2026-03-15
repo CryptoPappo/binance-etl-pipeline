@@ -86,6 +86,7 @@ def load_correlations(start_time, end_time):
     k_max = 100
     autocorr_sign = np.zeros(k_max)
     autocorr_size = np.zeros(k_max)
+    autocorr_corss = np.zeros(k_max)
     counts = np.zeros(k_max)
     signs = np.empty(CHUNK_SIZE+k_max, dtype=np.float32)
     sizes = np.empty(CHUNK_SIZE+k_max, dtype=np.float32)
@@ -99,6 +100,7 @@ def load_correlations(start_time, end_time):
         for i in range(1, k_max+1):
             autocorr_sign[i-1] += np.dot(signs[i:n+k_max], signs[:n+k_max-i])
             autocorr_size[i-1] += np.dot(sizes[i:n+k_max], sizes[:n+k_max-i])
+            autocorr_cross[i-1] += np.dot(signs[i:n+k_max], sizes[:n+k_max-i])
             counts[i-1] += n + start*k_max - i
 
         signs[:k_max] = signs[-k_max:]
@@ -111,7 +113,8 @@ def load_correlations(start_time, end_time):
             {
                 "lag": np.arange(1, k_max+1),
                 "autocorr_sign": autocorr_sign / counts,
-                "autocorr_size": autocorr_size / counts
+                "autocorr_size": autocorr_size / counts,
+                "autocorr_cross": autocorr_cross / counts
             }
     )
     return df
@@ -158,4 +161,26 @@ figure.update_xaxes(type="log")
 figure.update_yaxes(type="log")
 
 st.subheader("Trade Size Autocorrelation")
+st.plotly_chart(figure)
+
+
+figure = make_subplots()
+
+figure.add_trace(
+        go.Scatter(
+            x=df.lag,
+            y=df.autocorr_cross,
+            mode="markers",
+            marker_color="red"
+        )
+)
+
+figure.update(layout_xaxis_rangeslider_visible=False)
+figure.update_layout(title="BTC/USDT")
+figure.update_yaxes(title_text="Correlation")
+figure.update_xaxes(title_text="Lag")
+figure.update_xaxes(type="log")
+figure.update_yaxes(type="log")
+
+st.subheader("Trade Sign-Size Cross-Correlation")
 st.plotly_chart(figure)
