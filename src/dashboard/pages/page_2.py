@@ -85,14 +85,16 @@ def read_trades_in_chunks(
 @st.cache_data(ttl=3600)
 def load_correlations(start_time, end_time):
     k_max = 100
+    r_len = 100
     autocorr_sign = np.zeros(k_max)
     autocorr_size = np.zeros(k_max)
     autocorr_cross = np.zeros(k_max)
     autocorr_returns = np.zeros(k_max)
     counts = np.zeros(k_max)
+    counts_ret = np.zeros(k_max)
     signs = np.empty(CHUNK_SIZE+k_max, dtype=np.float32)
     sizes = np.empty(CHUNK_SIZE+k_max, dtype=np.float32)
-    returns = np.empty(CHUNK_SIZE+k_max, dtype=np.float32)
+    returns = np.empty(CHUNK_SIZE+k_max-r_len, dtype=np.float32)
     signs[:k_max] *= 0.0
     sizes[:k_max] *= 0.0
     returns[:k_max] *= 0.0
@@ -101,11 +103,11 @@ def load_correlations(start_time, end_time):
         n = len(chunk)
         signs[k_max:n+k_max] = chunk["sign"].to_numpy(dtype=np.float32, copy=False)
         sizes[k_max:n+k_max] = signs[k_max:n+k_max] * chunk["quantity"].to_numpy(dtype=np.float32, copy=False)
-        returns[k_max:n+k_max-1] = np.abs(
+        returns[k_max:n+k_max-r_len] = np.abs(
                 np.log(
                     np.divide(
-                        chunk["price"].to_numpy(dtype=np.float32, copy=False)[1:],
-                        chunk["price"].to_numpy(dtype=np.float32, copy=False)[:-1]
+                        chunk["price"].to_numpy(dtype=np.float32, copy=False)[r_len:],
+                        chunk["price"].to_numpy(dtype=np.float32, copy=False)[:-r_len]
                     )
                 )
         )
@@ -114,12 +116,13 @@ def load_correlations(start_time, end_time):
             autocorr_sign[i-1] += np.dot(signs[i:n+k_max], signs[:n+k_max-i])
             autocorr_size[i-1] += np.dot(sizes[i:n+k_max], sizes[:n+k_max-i])
             autocorr_cross[i-1] += np.dot(signs[i:n+k_max], sizes[:n+k_max-i])
-            autocorr_returns[i-1] += np.dot(returns[i:n+k_max-1], returns[:n+k_max-i-1])
+            autocorr_returns[i-1] += np.dot(returns[i:n+k_max-r_len], returns[:n+k_max-i-r_len])
             counts[i-1] += n + start*k_max - i
+            counts_ret[i-1] += n + start*k_max - i - r_len
 
         signs[:k_max] = signs[n:n+k_max]
         sizes[:k_max] = sizes[n:n+k_max]
-        returns[:k_max] = returns[n-1:n+k_max-1]
+        returns[:k_max] = returns[n-r_len:n+k_max-r_len]
         start = 1
 
         del chunk
@@ -130,7 +133,7 @@ def load_correlations(start_time, end_time):
                 "autocorr_sign": autocorr_sign / counts,
                 "autocorr_size": autocorr_size / counts,
                 "autocorr_cross": autocorr_cross / counts,
-                "autocorr_returns": autocorr_returns / counts
+                "autocorr_returns": autocorr_returns / counts_ret
             }
     )
     return df
