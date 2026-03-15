@@ -9,8 +9,6 @@ from collections.abc import Iterator
 
 CHUNK_SIZE = 1000000
 
-st.sidebar.header("Time settings")
-
 range_mode = st.radio(
     "Time range",
     options=["Preset", "Custom"],
@@ -101,7 +99,7 @@ def read_trades_in_chunks(
             yield chunk
 
 @st.cache_data(ttl=3600)
-def load_correlations(start_time, end_time):
+def load_correlations(start_time, end_time, k_max, r_len):
     autocorr_sign = np.zeros(k_max)
     autocorr_size = np.zeros(k_max)
     autocorr_cross = np.zeros(k_max)
@@ -154,7 +152,7 @@ def load_correlations(start_time, end_time):
     )
     return df
 
-df = load_correlations(start_time, end_time)
+df = load_correlations(start_time, end_time, k_max, r_len)
 
 figure = make_subplots()
 
