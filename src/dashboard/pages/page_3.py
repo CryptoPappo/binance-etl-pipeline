@@ -155,7 +155,10 @@ def load_histograms(start_time, end_time):
         counts_time[:] += hist_time[:]
         counts_sign[:] += hist_sign[:]
         
-        st.write(chunk["seconds"].to_numpy(dtype=np.float32, copy=False)[:20])
+        st.write(chunk["seconds"].head())
+        st.write(chunk["seconds"].to_numpy(dtype=np.float64, copy=False)[:20])
+        st.write(chunk["seconds"].to_numpy(dtype=np.int32, copy=False)[:20])
+
 
         del chunk
 
