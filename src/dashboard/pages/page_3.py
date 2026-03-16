@@ -136,8 +136,8 @@ def load_histograms(start_time, end_time):
     time_dif = np.empty(CHUNK_SIZE-1, dtype=np.float32)
     signed_qty = np.empty(CHUNK_SIZE, dtype=np.float32)
 
-    hist_time = np.empty(bins_size)
-    hist_sign = np.empty(bins_size)
+    hist_time = np.empty(bins_size-1)
+    hist_sign = np.empty(bins_size-1)
     for chunk in read_trades_in_chunks(start_time, end_time):
         n = len(chunk)
         time_dif[:n] = np.subtract(
@@ -171,9 +171,10 @@ if st.button("Run analysis"):
 
     figure = make_subplots()
 
+    bins = 0.5 * (df.bins["time_dif"][:-1] + df.bins["time_dif"][1:])
     figure.add_trace(
             go.Bar(
-                x=df.bins["time_dif"],
+                x=bins,
                 y=df.time_dif,
                 marker_color="#26a69a"
             )
@@ -191,9 +192,10 @@ if st.button("Run analysis"):
 
     figure = make_subplots()
     
+    bins = 0.5 * (df.bins["signed_qty"][:-1] + df.bins["signed_qty"][1:])
     figure.add_trace(
             go.Bar(
-                x=df.bins["time_dif"],
+                x=bins,
                 y=df.signed_qty,
                 marker_color="#26a69a"
             )
