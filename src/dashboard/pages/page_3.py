@@ -75,7 +75,7 @@ def get_bins(
             MAX(time_dif) AS time_dif_max,
             MAX(returns) AS returns_max,
             MIN(signed_qty) AS signed_qty_min,
-            MAX(signed_qty) AS signed_qty_max,
+            MAX(signed_qty) AS signed_qty_max
         FROM cte;
     """)
     
