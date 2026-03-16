@@ -63,7 +63,7 @@ def get_bins(
         WITH cte AS (
             SELECT
                 LEAD(time, 1) OVER (ORDER BY time) - time AS time_dif,
-                ABS(LN(LEAD(price, {k_max}) / price)) AS returns,
+                ABS(LN(LEAD(price, {k_max}) OVER (ORDER BY time) / price)) AS returns,
                 CASE 
                     WHEN order_type = 'Buy' THEN quantity
                     WHEN order_type = 'Sell' THEN -quantity
@@ -88,7 +88,7 @@ def get_bins(
                 "end_time": end_time,
             }
         )
-        qty_max = max(df["signed_qty_min"].abs(), df["signed_qty_max"])
+        qty_max = max(df["signed_qty_min"].abs()[0], df["signed_qty_max"][0])
         return {
                 "time_dif": np.linspace(0.0, df["time_dif_max"], bins),
                 "returns": np.linspace(0.0, df["returns_max"], bins),
