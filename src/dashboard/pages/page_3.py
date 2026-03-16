@@ -6,7 +6,6 @@ import pandas as pd
 import numpy as np
 import datetime as dt
 from collections.abc import Iterator
-import time
 
 CHUNK_SIZE = 1000000
 
@@ -63,7 +62,7 @@ def get_bins(
     query = sa.text(f"""
         WITH cte AS (
             SELECT
-                EXTRACT(EPOCH FROM (LEAD(time, 1) OVER (ORDER BY time) - time)) AS time_dif,
+                EXTRACT(EPOCH FROM (LEAD(time, 1) OVER (ORDER BY time) - time)) * 1000 AS time_dif,
                 ABS(LN(LEAD(price, {k_max}) OVER (ORDER BY time) / price)) AS returns,
                 CASE 
                     WHEN order_type = 'Buy' THEN quantity
@@ -103,7 +102,7 @@ def read_trades_in_chunks(
 ) -> Iterator[pd.DataFrame]:
     query = sa.text(f"""
         SELECT
-            EXTRACT(EPOCH FROM time) AS seconds,
+            EXTRACT(EPOCH FROM time) * 1000 AS seconds,
             price,
             CASE
                 WHEN order_type = 'Buy'  THEN  1
@@ -132,8 +131,6 @@ def load_histograms(start_time, end_time):
     k_max = 100
     bins_size = 100
     bins = get_bins(start_time, end_time, k_max, bins_size)
-    st.write(f"Time taken for bins: {time.time() - t0}s")
-    t0 = time.time()
     counts_time = np.zeros(bins_size-1)
     counts_sign = np.zeros(bins_size-1)
 
@@ -158,8 +155,6 @@ def load_histograms(start_time, end_time):
 
         counts_time[:] += hist_time[:]
         counts_sign[:] += hist_sign[:]
-        
-        st.write(chunk["seconds"].to_numpy(dtype=np.float32, copy=False)[:10])
 
         del chunk
 
@@ -169,7 +164,6 @@ def load_histograms(start_time, end_time):
                 "signed_qty": counts_sign
             }
     )
-    st.write(f"Time taken for bins: {time.time() - t0}s")
     return df, bins
 
 if st.button("Run analysis"):
@@ -193,7 +187,7 @@ if st.button("Run analysis"):
     figure.update(layout_xaxis_rangeslider_visible=False)
     figure.update_layout(title="BTC/USDT")
     figure.update_yaxes(title_text="Count")
-    figure.update_xaxes(title_text="Time Difference")
+    figure.update_xaxes(title_text="Time Difference ms")
     figure.update_xaxes(type="log")
     figure.update_yaxes(type="log")
 
