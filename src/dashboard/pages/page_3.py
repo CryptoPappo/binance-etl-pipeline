@@ -62,7 +62,7 @@ def get_bins(
     query = sa.text(f"""
         WITH cte AS (
             SELECT
-                EXTRACT(EPOCH FROM (LEAD(time, 1) OVER (ORDER BY time) - time)) * 1000 AS time_dif,
+                (LEAD(EXTRACT(EPOCH FROM time), 1) OVER (ORDER BY time) - EXTRACT(EPOCH FROM time)) * 1000 AS time_dif,
                 ABS(LN(LEAD(price, {k_max}) OVER (ORDER BY time) / price)) AS returns,
                 CASE 
                     WHEN order_type = 'Buy' THEN quantity
@@ -141,8 +141,8 @@ def load_histograms(start_time, end_time):
     for chunk in read_trades_in_chunks(start_time, end_time):
         n = len(chunk)
         time_dif[:n-1] = np.subtract(
-                chunk["seconds"].to_numpy(dtype=np.float32, copy=False)[1:],
-                chunk["seconds"].to_numpy(dtype=np.float32, copy=False)[:-1]
+                chunk["seconds"].to_numpy(dtype=np.float64, copy=False)[1:],
+                chunk["seconds"].to_numpy(dtype=np.float64, copy=False)[:-1]
         )
         signed_qty[:n] = np.multiply(
                 chunk["sign"].to_numpy(dtype=np.float32, copy=False),
@@ -154,11 +154,6 @@ def load_histograms(start_time, end_time):
 
         counts_time[:] += hist_time[:]
         counts_sign[:] += hist_sign[:]
-        
-        st.write(chunk["seconds"].head())
-        st.write(chunk["seconds"].to_numpy(dtype=np.float64, copy=False)[:20])
-        st.write(chunk["seconds"].to_numpy(dtype=np.int32, copy=False)[:20])
-
 
         del chunk
 
