@@ -144,7 +144,7 @@ def load_histograms(start_time, end_time):
     hist_sign = np.empty(bins_size-1)
     for chunk in read_trades_in_chunks(start_time, end_time):
         n = len(chunk)
-        time_dif[:n] = np.subtract(
+        time_dif[:n-1] = np.subtract(
                 chunk["seconds"].to_numpy(dtype=np.float32, copy=False)[1:],
                 chunk["seconds"].to_numpy(dtype=np.float32, copy=False)[:-1]
         )
