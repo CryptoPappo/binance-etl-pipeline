@@ -90,10 +90,9 @@ def get_bins(
         )
         qty_max = max(df["signed_qty_min"].abs()[0], df["signed_qty_max"][0])
         return {
-                "time_dif": np.linspace(0.0, df["time_dif_max"], bins),
-                "returns": np.linspace(0.0, df["returns_max"], bins),
-                "sells_qty": np.linspace(df["signed_qty_min"], 0.0, bins),
-                "buys_qty": np.linspace(0.0, df["signed_qty_max"], bins),
+                "time_dif": np.linspace(0.0, df["time_dif_max"][0], bins),
+                "returns": np.linspace(0.0, df["returns_max"][0], bins),
+                "signed_qty": np.linspace(df["signed_qty_min"][0], df["signed_qty_max"], bins),
                 "quantity": np.linspace(0.0, qty_max, bins)
         }
 
@@ -131,7 +130,6 @@ def load_histograms(start_time, end_time):
     k_max = 100
     bins_size = 100
     bins = get_bins(start_time, end_time, k_max, bins_size)
-    st.write(bins)
     counts_time = np.zeros(bins_size)
     counts_sign = np.zeros(bins_size)
 
@@ -191,4 +189,22 @@ if st.button("Run analysis"):
     st.subheader("Trade Time Difference Histogram")
     st.plotly_chart(figure)
 
+    figure = make_subplots()
+    
+    figure.add_trace(
+            go.Bar(
+                x=df.bins["time_dif"],
+                y=df.signed_qty,
+                marker_color="#26a69a"
+            )
+    )
 
+    figure.update(layout_xaxis_rangeslider_visible=False)
+    figure.update_layout(title="BTC/USDT")
+    figure.update_yaxes(title_text="Count")
+    figure.update_xaxes(title_text="Trade Size")
+    figure.update_xaxes(type="log")
+    figure.update_yaxes(type="log")
+
+    st.subheader("Signed Trade Size Histogram")
+    st.plotly_chart(figure)
