@@ -134,8 +134,8 @@ def load_histograms(start_time, end_time):
     bins = get_bins(start_time, end_time, k_max, bins_size)
     st.write(f"Time taken for bins: {time.time() - t0}s")
     t0 = time.time()
-    counts_time = np.zeros(bins_size)
-    counts_sign = np.zeros(bins_size)
+    counts_time = np.zeros(bins_size-1)
+    counts_sign = np.zeros(bins_size-1)
 
     time_dif = np.empty(CHUNK_SIZE-1, dtype=np.float32)
     signed_qty = np.empty(CHUNK_SIZE, dtype=np.float32)
@@ -156,8 +156,8 @@ def load_histograms(start_time, end_time):
         hist_time[:], _ = np.histogram(time_dif[:n], bins=bins["time_dif"])
         hist_sign[:], _ = np.histogram(signed_qty[:n], bins=bins["signed_qty"])
 
-        counts_time += hist_time
-        counts_sign += hist_sign
+        counts_time[:] += hist_time[:]
+        counts_sign[:] += hist_sign[:]
 
         del chunk
 
