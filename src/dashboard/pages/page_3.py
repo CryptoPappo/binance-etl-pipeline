@@ -131,6 +131,7 @@ def load_histograms(start_time, end_time):
     k_max = 100
     bins_size = 100
     bins = get_bins(start_time, end_time, k_max, bins_size)
+    st.write(bins)
     counts_time = np.zeros(bins_size)
     counts_sign = np.zeros(bins_size)
 
