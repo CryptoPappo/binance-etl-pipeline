@@ -6,6 +6,7 @@ import pandas as pd
 import numpy as np
 import datetime as dt
 from collections.abc import Iterator
+import time
 
 CHUNK_SIZE = 1000000
 
