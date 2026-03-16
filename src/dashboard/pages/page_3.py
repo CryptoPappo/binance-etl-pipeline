@@ -158,6 +158,8 @@ def load_histograms(start_time, end_time):
 
         counts_time[:] += hist_time[:]
         counts_sign[:] += hist_sign[:]
+        
+        st.write(chunk["seconds"].to_numpy(dtype=np.float32, copy=False)[:10])
 
         del chunk
 
