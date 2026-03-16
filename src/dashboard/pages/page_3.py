@@ -62,7 +62,7 @@ def get_bins(
     query = sa.text(f"""
         WITH cte AS (
             SELECT
-                LEAD(time, 1) OVER (ORDER BY time) - time AS time_dif,
+                EXTRACT(EPOCH FROM (LEAD(time, 1) OVER (ORDER BY time) - time)) AS time_dif,
                 ABS(LN(LEAD(price, {k_max}) OVER (ORDER BY time) / price)) AS returns,
                 CASE 
                     WHEN order_type = 'Buy' THEN quantity
@@ -103,7 +103,7 @@ def read_trades_in_chunks(
 ) -> Iterator[pd.DataFrame]:
     query = sa.text(f"""
         SELECT
-            time,
+            EXTRACT(EPOCH FROM time) AS seconds,
             price,
             CASE
                 WHEN order_type = 'Buy'  THEN  1
@@ -142,8 +142,8 @@ def load_histograms(start_time, end_time):
     for chunk in read_trades_in_chunks(start_time, end_time):
         n = len(chunk)
         time_dif[:n] = np.subtract(
-                chunk["time"].to_numpy(dtype=np.float32, copy=False)[1:],
-                chunk["time"].to_numpy(dtype=np.float32, copy=False)[:-1]
+                chunk["seconds"].to_numpy(dtype=np.float32, copy=False)[1:],
+                chunk["seconds"].to_numpy(dtype=np.float32, copy=False)[:-1]
         )
         signed_qty[:n] = np.multiply(
                 chunk["sign"].to_numpy(dtype=np.float32, copy=False),
