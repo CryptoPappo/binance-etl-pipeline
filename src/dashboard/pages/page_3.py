@@ -173,14 +173,18 @@ def load_histograms(start_time, end_time):
 if st.button("Run analysis"):
     df, bins = load_histograms(start_time, end_time)
 
+    st.write(df["time_dif"].head())
+    st.write(bins["time_dif"][:10])
+
     figure = make_subplots()
 
     bins_time = 0.5 * (bins["time_dif"][:-1] + bins["time_dif"][1:])
     figure.add_trace(
-            go.Bar(
+            go.Scatter(
                 x=bins_time,
                 y=df.time_dif,
-                marker_color="#26a69a"
+                mode="markers",
+                marker_color="red"
             )
     )
 
@@ -198,10 +202,11 @@ if st.button("Run analysis"):
     
     bins_signed = 0.5 * (bins["signed_qty"][:-1] + bins["signed_qty"][1:])
     figure.add_trace(
-            go.Bar(
+            go.Scatter(
                 x=bins_signed,
                 y=df.signed_qty,
-                marker_color="#26a69a"
+                mode="markers",
+                marker_color="red"
             )
     )
 
