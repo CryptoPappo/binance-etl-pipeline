@@ -92,7 +92,7 @@ def get_bins(
         return {
                 "time_dif": np.linspace(0.0, df["time_dif_max"][0], bins),
                 "returns": np.linspace(0.0, df["returns_max"][0], bins),
-                "signed_qty": np.linspace(df["signed_qty_min"][0], df["signed_qty_max"], bins),
+                "signed_qty": np.linspace(df["signed_qty_min"][0], df["signed_qty_max"][0], bins),
                 "quantity": np.linspace(0.0, qty_max, bins)
         }
 
@@ -127,9 +127,12 @@ def read_trades_in_chunks(
 
 @st.cache_data(ttl=3600)
 def load_histograms(start_time, end_time):
+    t0 = time.time()
     k_max = 100
     bins_size = 100
     bins = get_bins(start_time, end_time, k_max, bins_size)
+    st.write(f"Time taken for bins: {time.time() - t0}s")
+    t0 = time.time()
     counts_time = np.zeros(bins_size)
     counts_sign = np.zeros(bins_size)
 
@@ -164,6 +167,7 @@ def load_histograms(start_time, end_time):
                 "signed_qty": counts_sign
             }
     )
+    st.write(f"Time taken for bins: {time.time() - t0}s")
     return df
 
 if st.button("Run analysis"):
