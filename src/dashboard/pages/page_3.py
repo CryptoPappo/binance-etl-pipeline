@@ -127,7 +127,6 @@ def read_trades_in_chunks(
 
 @st.cache_data(ttl=3600)
 def load_histograms(start_time, end_time):
-    t0 = time.time()
     k_max = 100
     bins_size = 100
     bins = get_bins(start_time, end_time, k_max, bins_size)
