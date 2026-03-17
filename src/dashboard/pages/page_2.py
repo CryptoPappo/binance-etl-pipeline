@@ -104,20 +104,25 @@ def load_correlations(start_time, end_time, k_max, r_len):
     autocorr_size = np.zeros(k_max)
     autocorr_cross = np.zeros(k_max)
     autocorr_returns = np.zeros(k_max)
+
     counts = np.zeros(k_max)
     counts_ret = np.zeros(k_max)
+
     signs = np.empty(CHUNK_SIZE+k_max, dtype=np.float32)
     sizes = np.empty(CHUNK_SIZE+k_max, dtype=np.float32)
     returns = np.empty(CHUNK_SIZE+k_max-r_len, dtype=np.float32)
     signs[:k_max] *= 0.0
     sizes[:k_max] *= 0.0
     returns[:k_max] *= 0.0
+
     start = 0
     for chunk in read_trades_in_chunks(start_time, end_time):
         n = len(chunk)
         n_ret = n - r_len
+
         signs[k_max:n+k_max] = chunk["sign"].to_numpy(dtype=np.float32, copy=False)
         sizes[k_max:n+k_max] = signs[k_max:n+k_max] * chunk["quantity"].to_numpy(dtype=np.float32, copy=False)
+
         if n_ret > 0:
             returns[k_max:n_ret+k_max] = np.abs(
                     np.log(

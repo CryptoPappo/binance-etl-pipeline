@@ -56,26 +56,25 @@ engine = sa.create_engine(st.secrets["db_url"])
 def get_bins(
         start_time: dt.datetime,
         end_time: dt.datetime,
-        k_max: int,
+        r_len: int,
         bins: int
 ) -> dict[str, np.ndarray]:
     query = sa.text(f"""
         WITH cte AS (
             SELECT
                 (LEAD(EXTRACT(EPOCH FROM time), 1) OVER (ORDER BY time) - EXTRACT(EPOCH FROM time)) * 1000 AS time_dif,
-                ABS(LN(LEAD(price, {k_max}) OVER (ORDER BY time) / price)) AS returns,
-                CASE 
-                    WHEN order_type = 'Buy' THEN quantity
-                    WHEN order_type = 'Sell' THEN -quantity
-                END AS signed_qty
+                ABS(LN(LEAD(price, :r_len) OVER (ORDER BY time) / price)) AS returns,
+                quantity
             FROM trades
             WHERE time BETWEEN :start_time AND :end_time
         )
-        SELECT 
+        SELECT
+            MIN(time_dif) AS time_dif_min,
             MAX(time_dif) AS time_dif_max,
+            MIN(returns) AS returns_min,
             MAX(returns) AS returns_max,
-            MIN(signed_qty) AS signed_qty_min,
-            MAX(signed_qty) AS signed_qty_max
+            MIN(quantity) AS quantity_min,
+            MAX(quantity) AS quantity_max
         FROM cte;
     """)
     
@@ -84,16 +83,15 @@ def get_bins(
             query,
             conn,
             params={
+                "r_len": r_len,
                 "start_time": start_time,
                 "end_time": end_time,
             }
         )
-        qty_max = max(df["signed_qty_min"].abs()[0], df["signed_qty_max"][0])
         return {
-                "time_dif": np.linspace(0.0, df["time_dif_max"][0], bins),
-                "returns": np.linspace(0.0, df["returns_max"][0], bins),
-                "signed_qty": np.linspace(df["signed_qty_min"][0], df["signed_qty_max"][0], bins),
-                "quantity": np.linspace(0.0, qty_max, bins)
+                "time_dif": np.linspace(df.time_dif_min[0], df.time_dif_max[0], bins+1),
+                "returns": np.linspace(df.returns_min[0], df.returns_max[0], bins+1),
+                "quantity": np.linspace(df.quantity_min[0], df.quantity_max[0], bins+1),
         }
 
 def read_trades_in_chunks(
@@ -104,10 +102,6 @@ def read_trades_in_chunks(
         SELECT
             EXTRACT(EPOCH FROM time) * 1000 AS seconds,
             price,
-            CASE
-                WHEN order_type = 'Buy'  THEN  1
-                WHEN order_type = 'Sell' THEN -1
-            END AS sign,
             quantity
         FROM trades
         WHERE time BETWEEN :start_time AND :end_time
@@ -127,40 +121,62 @@ def read_trades_in_chunks(
 
 @st.cache_data(ttl=3600)
 def load_histograms(start_time, end_time):
-    k_max = 100
+    r_len = 100
     bins_size = 100
-    bins = get_bins(start_time, end_time, k_max, bins_size)
-    counts_time = np.zeros(bins_size-1)
-    counts_sign = np.zeros(bins_size-1)
+    bins = get_bins(start_time, end_time, r_len, bins_size)
+    counts_time = np.zeros(bins_size)
+    counts_qty = np.zeros(bins_size)
+    counts_ret = np.zeros(bins_size)
 
     time_dif = np.empty(CHUNK_SIZE-1, dtype=np.float32)
-    signed_qty = np.empty(CHUNK_SIZE, dtype=np.float32)
+    returns = np.empty(CHUNK_SIZE-r_len, dtype=np.float32)
 
-    hist_time = np.empty(bins_size-1)
-    hist_sign = np.empty(bins_size-1)
+    hist_time = np.empty(bins_size)
+    hist_qty = np.empty(bins_size)
+    hist_ret = np.empty(bins_size)
     for chunk in read_trades_in_chunks(start_time, end_time):
         n = len(chunk)
+        n_ret = n - r_len
+
+        if n_ret > 0:
+            returns[:n_ret] = np.abs(
+                    np.log(
+                        np.divide(
+                            chunk["price"].to_numpy(dtype=np.float32, copy=False)[r_len:],
+                            chunk["price"].to_numpy(dtype=np.float32, copy=False)[:-r_len]
+                        )
+                    )
+            )
+            hist_ret[:], _ = np.histogram(
+                    returns[:n_ret],
+                    bins=bins["returns"]
+            )
+            counts_ret[:] += hist_ret[:]
+
         time_dif[:n-1] = np.subtract(
                 chunk["seconds"].to_numpy(dtype=np.float64, copy=False)[1:],
                 chunk["seconds"].to_numpy(dtype=np.float64, copy=False)[:-1]
         )
-        signed_qty[:n] = np.multiply(
-                chunk["sign"].to_numpy(dtype=np.float32, copy=False),
-                chunk["quantity"].to_numpy(dtype=np.float32, copy=False)
+
+        hist_time[:], _ = np.histogram(
+                time_dif[:n-1],
+                bins=bins["time_dif"]
+        )
+        hist_qty[:], _ = np.histogram(
+                chunk["quantity"].to_numpy(dtype=np.float32, copy=False),
+                bins=bins["quantity"]
         )
 
-        hist_time[:], _ = np.histogram(time_dif[:n], bins=bins["time_dif"])
-        hist_sign[:], _ = np.histogram(signed_qty[:n], bins=bins["signed_qty"])
-
         counts_time[:] += hist_time[:]
-        counts_sign[:] += hist_sign[:]
+        counts_qty[:] += hist_qty[:]
 
         del chunk
 
     df = pd.DataFrame(
             {
                 "time_dif": counts_time,
-                "signed_qty": counts_sign
+                "quantity": counts_qty,
+                "returns": counts_ret,
             }
     )
     return df, bins
@@ -192,11 +208,11 @@ if st.button("Run analysis"):
 
     figure = make_subplots()
     
-    bins_signed = 0.5 * (bins["signed_qty"][:-1] + bins["signed_qty"][1:])
+    bins_qty = 0.5 * (bins["quantity"][:-1] + bins["quantity"][1:])
     figure.add_trace(
             go.Scatter(
-                x=bins_signed,
-                y=df.signed_qty,
+                x=bins_qty,
+                y=df.quantity,
                 mode="markers",
                 marker_color="red"
             )
@@ -209,5 +225,27 @@ if st.button("Run analysis"):
     figure.update_xaxes(type="log")
     figure.update_yaxes(type="log")
 
-    st.subheader("Signed Trade Size Histogram")
+    st.subheader("Trade Size Histogram")
+    st.plotly_chart(figure)
+
+    figure = make_subplots()
+    
+    bins_ret = 0.5 * (bins["returns"][:-1] + bins["returns"][1:])
+    figure.add_trace(
+            go.Scatter(
+                x=bins_ret,
+                y=df.returns,
+                mode="markers",
+                marker_color="red"
+            )
+    )
+
+    figure.update(layout_xaxis_rangeslider_visible=False)
+    figure.update_layout(title="BTC/USDT")
+    figure.update_yaxes(title_text="Count")
+    figure.update_xaxes(title_text="Returns")
+    figure.update_xaxes(type="log")
+    figure.update_yaxes(type="log")
+
+    st.subheader("Absolute Logarithmic Returns Histogram")
     st.plotly_chart(figure)
