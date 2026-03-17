@@ -51,6 +51,22 @@ MAX_RANGE = dt.timedelta(days=14)
 if end_time - start_time > MAX_RANGE:
     st.warning("Selected range is very large and may be slow.")
 
+st.sidebar.header("Bins/Correlation settings")
+
+bins_size = st.sidebar.slider(
+    "Number of bins",
+    min_value=1,
+    max_value=500,
+    value=100
+)
+
+r_len = st.sidebar.number_input(
+    "Trades per return",
+    min_value=1,
+    value=100,
+    step=1
+)
+
 engine = sa.create_engine(st.secrets["db_url"])
 
 def get_bins(
@@ -120,10 +136,9 @@ def read_trades_in_chunks(
             yield chunk
 
 @st.cache_data(ttl=3600)
-def load_histograms(start_time, end_time):
-    r_len = 100
-    bins_size = 100
+def load_histograms(start_time, end_time, r_len, bins_size):
     bins = get_bins(start_time, end_time, r_len, bins_size)
+
     counts_time = np.zeros(bins_size)
     counts_qty = np.zeros(bins_size)
     counts_ret = np.zeros(bins_size)
@@ -182,7 +197,7 @@ def load_histograms(start_time, end_time):
     return df, bins
 
 if st.button("Run analysis"):
-    df, bins = load_histograms(start_time, end_time)
+    df, bins = load_histograms(start_time, end_time, r_len, bins_size)
 
     figure = make_subplots()
 
