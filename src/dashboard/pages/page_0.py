@@ -32,8 +32,8 @@ Charts included:
     Displays OHLC price candles for a selected time interval, together with traded volume. This provides a compact view of price evolution and liquidity.
 - **Trade volume and trade count**  
     Shows how trading activity evolves over time by plotting:  
-        - Total traded volume   
-        - Number of trades per interval  
+      * Total traded volume   
+      * Number of trades per interval  
     This helps distinguish between high-volume trading and high-frequency activity.  
 - **Normalized delta volume**  
     Measures the imbalance between buy and sell volume, normalized by total volume.  
