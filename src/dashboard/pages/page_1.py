@@ -209,5 +209,3 @@ if st.button("Run analysis"):
 
     st.subheader(f"{interval_label} Delta Volume Normalized")
     st.plotly_chart(figure)
-
-
