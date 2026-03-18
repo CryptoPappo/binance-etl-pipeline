@@ -25,6 +25,7 @@ The goal of this project is to strengthen practical data engineering skills usin
 * **Pandas** (data transformations)
 * **SQLAlchemy / psycopg2** (database connection)
 * **PostgreSQL**
+* **Streamlit** (dashboard app)
 * **Cron** (scheduling)
 * **Git** (version control)
 
@@ -184,7 +185,7 @@ Logs include:
   * Errors from API or database
   * Cron-triggered execution reports
 
-## :bar_chart: Interactive Dashboard
+## Interactive Dashboard
 
 This project includes an interactive dashboard built with **Streamlit** to explore 
 and analyze high-frequency trade data from Binance. The dashboard is organized 
@@ -202,7 +203,7 @@ dashboard is designed to handle large datasets efficiently while allowing
 users to interactively select time ranges, aggregation intervals, and 
 analysis parameters.
 
-## :arrow_forward: Running the Dashboard
+## Running the Dashboard
 
 The interactive dashboard is built using **Streamlit** and connects to a 
 PostgreSQL database containing the extracted trade data.
