@@ -32,12 +32,17 @@ The goal of this project is to strengthen practical data engineering skills usin
 ```
 binance-etl-pipeline/
 ├── src/
-|   ├── images/
+|   ├── dashboard/
+|   |   ├── pages/
+|   |   |   ├── page_0.py
+|   |   |   ├── page_1.py
+|   |   |   ├── page_2.py
+|   |   |   └── page_3.py
+|   |   └── app.py
 │   ├── extract.py
 │   ├── transform.py
 │   ├── load.py
 │   ├── utils.py
-│   ├── analysis.py
 │   └── main.py
 ├── sql
 |    └── create_tables.sql
@@ -50,6 +55,7 @@ binance-etl-pipeline/
 |   ├── test_transform.py
 |   └── test_load.py
 ├── requirements.txt
+├── requirements_dev.txt 
 └── README.md
 ```
 
@@ -68,6 +74,8 @@ Python dependencies are listed in the `requirements.txt` file, which includes:
 - SQLAlchemy
 - PyYAML
 - psycopg2-binary
+- streamlit
+- plotly
 - logging (built-in)
 
 ## Installation
@@ -176,24 +184,45 @@ Logs include:
   * Errors from API or database
   * Cron-triggered execution reports
 
-## Trade Analysis
+## :bar_chart: Interactive Dashboard
 
-The project includes an optional `analysis.py` module with helper 
-functions to explore and visualize the extracted trade data.
+This project includes an interactive dashboard built with **Streamlit** to explore 
+and analyze high-frequency trade data from Binance. The dashboard is organized 
+into multiple pages covering:   
 
-You can generate plots such as:
+- Market overview  
+- Orders correlations   
+- Statistical distributions   
 
-- Price over time
-- Volume over time
-- Buy vs Sell distribution
-- Trade size distributions
-- Volume delta
-- Tick imbalance
-- Autocorrelation functions
+It features candlestick charts with volume, trade volume and count metrics, 
+normalized order-flow imbalance, autocorrelation and 
+cross-correlation analyses of trade signs, sizes, and returns, as well as 
+histograms of inter-trade times, trade sizes, and absolute returns. The 
+dashboard is designed to handle large datasets efficiently while allowing 
+users to interactively select time ranges, aggregation intervals, and 
+analysis parameters.
 
-These tools help validate the ETL results and provide insights into market activity. 
+## :arrow_forward: Running the Dashboard
 
-Some example plots are stored in `src/images`.
+The interactive dashboard is built using **Streamlit** and connects to a 
+PostgreSQL database containing the extracted trade data.
+
+1. **Install dependencies**  
+   Create and activate a virtual environment, then install the required packages:
+   ```bash
+   pip install -r requirements.txt
+   ```
+2. **Configure the database connection**  
+   Set the database credentials using environment variables or a configuration file (see `config/config.yaml.example`).
+3. **Run the application**
+   From the project root, start the Streamlit app with:
+   ```bash
+   streamlit run src/dashboard/app.py
+   ```
+   The dashboard will be available locally at:
+   ```bash
+   http://localhost:8501
+   ```
 
 ## Tests
 

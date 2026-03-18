@@ -4,5 +4,4 @@ SQLAlchemy
 PyYAML
 psycopg2-binary
 streamlit
-matplotlib
 plotly
