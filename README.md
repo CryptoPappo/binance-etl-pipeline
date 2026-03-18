@@ -261,7 +261,7 @@ depend on network availability during development.
 * Store raw and transformed data separately
 * Move scheduling to Airflow for more complex workflow
 * Add Docker support
-* Generate reports automatically
+* ~~Generate reports automatically~~
 
 ## License
 This project is open-source and available under the MIT License.
